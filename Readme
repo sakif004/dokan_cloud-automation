@@ -1,0 +1,9 @@
+Install npm
+Install Playwright
+create .env
+
+
+Install dotenv package
+This package allows Playwright to read variables from .env.
+Run this command in your terminal:
+`npm install dotenv --save-dev`
