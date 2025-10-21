@@ -1,5 +1,5 @@
 import { test, Browser, Page, expect, BrowserContext, chromium } from '@playwright/test';
-import { AuthenticationPage } from '../../pages/admin/authenticationPage';
+import { AuthenticationPage } from '../../pages/admin/adminAuthPage';
 import * as fs from 'fs';
 
 let browser: Browser;
