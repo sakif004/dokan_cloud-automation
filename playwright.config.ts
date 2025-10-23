@@ -45,10 +45,11 @@ export default defineConfig({
       name: "preSetup",
       testMatch: [
         'tests/admin/vendorCreate.spec.ts',
+        'tests/admin/categoryCreate.spec.ts',
       ],
     },
     {
-      name: "preSetup",
+      name: "cleanup",
       testMatch: [
         //TODO: Add more tests here''
       ],
