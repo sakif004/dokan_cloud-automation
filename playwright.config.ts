@@ -39,9 +39,20 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'adminStorageState.json',
-      },
-
+      }
     },
+    {
+      name: "preSetup",
+      testMatch: [
+        'tests/admin/vendorCreate.spec.ts',
+      ],
+    },
+    {
+      name: "preSetup",
+      testMatch: [
+        //TODO: Add more tests here''
+      ],
+    }
 
     // {
     //   name: 'firefox',
