@@ -46,6 +46,7 @@ export default defineConfig({
       testMatch: [
         'tests/admin/vendorCreate.spec.ts',
         'tests/admin/categoryCreate.spec.ts',
+        'tests/admin/brandCreate.spec.ts'
       ],
     },
     {
