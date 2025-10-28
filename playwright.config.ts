@@ -38,15 +38,16 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'adminStorageState.json',
+        // storageState: 'adminStorageState.json',
       }
     },
     {
-      name: "preSetup",
+      name: "adminPreSetup",
       testMatch: [
-        'tests/admin/vendorCreate.spec.ts',
+        // 'tests/admin/vendorCreate.spec.ts',
         'tests/admin/categoryCreate.spec.ts',
-        'tests/admin/brandCreate.spec.ts'
+        'tests/admin/brandCreate.spec.ts',
+        'tests/admin/collectionCreate.spec.ts',
       ],
     },
     {

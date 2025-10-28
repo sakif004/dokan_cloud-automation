@@ -1,6 +1,6 @@
 // adminCreateVendor.spec.ts
 import { test, Browser, BrowserContext, Page, chromium } from '@playwright/test';
-import { AuthenticationPage } from '../../pages/admin/adminAuthPage';
+import { adminAuthenticationPage } from '../../pages/admin/adminAuthPage';
 import { VendorManagementPage } from '../../pages/admin/vendorsPage';
 import * as fs from 'fs';
 
@@ -9,10 +9,12 @@ let context: BrowserContext;
 let page: Page;
 let vendorPage: VendorManagementPage;
 
+const STORAGE_STATE_PATH = 'tests/fixtures/adminStorageState.json';
+
 test.beforeAll(async () => {
     // ✅ Optional: Clear any previous session before starting
-    if (fs.existsSync('adminStorageState.json')) {
-        fs.writeFileSync('adminStorageState.json', '{}'); //clear cookies before starting the test suite
+    if (fs.existsSync(STORAGE_STATE_PATH)) {
+        fs.writeFileSync(STORAGE_STATE_PATH, '{}'); //clear cookies before starting the test suite
     }
 
     browser = await chromium.launch();
@@ -20,11 +22,11 @@ test.beforeAll(async () => {
     page = await context.newPage();
 
     // Login once using your Page Object
-    const authPage = new AuthenticationPage(page);
+    const authPage = new adminAuthenticationPage(page);
     await authPage.adminLogin();
 
     // ✅ Save session (cookies, tokens) for reuse
-    await context.storageState({ path: 'adminStorageState.json' });
+    await context.storageState({ path: STORAGE_STATE_PATH });
     console.log('✅ Admin session saved successfully');
 });
 
@@ -57,6 +59,6 @@ test.describe('Admin - Vendor Management', () => {
 
 //clear cookies after finishing the test suite
 test.afterAll(async () => {
-    fs.writeFileSync('adminStorageState.json', '{}');
+    fs.writeFileSync(STORAGE_STATE_PATH, '{}');
     await browser.close();
 });

@@ -9,6 +9,8 @@ let Urls: {
     adminEmail: string;
     adminPassword: string;
     vendorUrl: string;
+    vendorEmail: string;
+    vendorPassword: string;
     customerUrl: string;
 } = {
     // Main Site URL
@@ -16,6 +18,8 @@ let Urls: {
     adminEmail: process.env.ADMIN_EMAIL || '',
     adminPassword: process.env.ADMIN_PASSWORD || '',
     vendorUrl: process.env.VENDOR_URL || '',
+    vendorEmail: process.env.VENDOR_EMAIL || '',
+    vendorPassword: process.env.VENDOR_PASSWORD || '',
     customerUrl: process.env.CUSTOMER_URL || '',
 
 };

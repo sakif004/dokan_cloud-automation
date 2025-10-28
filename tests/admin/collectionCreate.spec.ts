@@ -1,5 +1,5 @@
 import { test, Browser, BrowserContext, Page, chromium } from '@playwright/test';
-import { AuthenticationPage } from '../../pages/admin/adminAuthPage';
+import { adminAuthenticationPage } from '../../pages/admin/adminAuthPage';
 import { CollectionManagementPage } from '../../pages/admin/productCollectionPage';
 import * as fs from 'fs';
 
@@ -8,22 +8,24 @@ let context: BrowserContext;
 let page: Page;
 let collectionPage: CollectionManagementPage;
 
+const STORAGE_STATE_PATH = 'tests/fixtures/adminStorageState.json';
+
 test.beforeAll(async () => {
     // ✅ Clear any previous session before starting
-    if (fs.existsSync('adminStorageState.json')) {
-        fs.writeFileSync('adminStorageState.json', '{}');
+    if (fs.existsSync(STORAGE_STATE_PATH)) {
+        fs.writeFileSync(STORAGE_STATE_PATH, '{}');
     }
 
     browser = await chromium.launch();
     context = await browser.newContext();
     page = await context.newPage();
 
-    // Login once using AuthenticationPage
-    const authPage = new AuthenticationPage(page);
+    // Login once using adminAuthenticationPage
+    const authPage = new adminAuthenticationPage(page);
     await authPage.adminLogin();
 
     // ✅ Save session (cookies, tokens) for reuse
-    await context.storageState({ path: 'adminStorageState.json' });
+    await context.storageState({ path: STORAGE_STATE_PATH });
     console.log('✅ Admin session saved successfully');
 });
 
@@ -48,7 +50,7 @@ test.describe('Admin - Collection Management', () => {
 
 // Clear cookies after finishing the test suite
 test.afterAll(async () => {
-    fs.writeFileSync('adminStorageState.json', '{}');
+    fs.writeFileSync(STORAGE_STATE_PATH, '{}');
     await browser.close();
     console.log('✅ Browser closed and session cleared');
 });
