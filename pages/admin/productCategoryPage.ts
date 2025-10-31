@@ -51,14 +51,16 @@ export class CategoryManagementPage {
      */
     async openNewCategoryForm() {
         await this.newCategoryLink.click();
+        await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000); // Wait for form to be fully interactive
     }
 
     /**
      * Fill category name
      */
     async fillCategoryName(name: string) {
-        await this.nameInput.click();
+        // await this.nameInput.click();
         await this.nameInput.fill(name);
     }
 
