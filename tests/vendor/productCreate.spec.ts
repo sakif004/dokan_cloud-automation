@@ -1,57 +1,67 @@
-import { test, expect } from '@playwright/test';
+import { test, Browser, BrowserContext, Page, chromium } from '@playwright/test';
+import { VendorAuthenticationPage } from '../../pages/vendor/vendorAuthPage';
+import { VendorProductPage } from '../../pages/vendor/productCreatePage';
+import * as fs from 'fs';
 
-test('test', async ({ page }) => {
-    await page.goto('https://birds-eye1.ondokan.com/vendor/login');
-    await page.getByRole('textbox', { name: 'Email Address' }).click();
-    await page.getByRole('textbox', { name: 'Email Address' }).fill('testvendorone@wedevs.com');
-    await page.getByRole('textbox', { name: 'Password' }).click();
-    await page.getByRole('textbox', { name: 'Password' }).fill('testvendorone@wedevs.com');
-    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-    await page.locator('a').filter({ hasText: /^Products$/ }).click();
-    await page.getByRole('link', { name: 'All Products' }).click();
-    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
-    await page.getByRole('link', { name: 'Add Product' }).click();
-    await expect(page.getByRole('heading', { name: 'New Product' })).toBeVisible();
-    await page.getByRole('textbox', { name: 'Name' }).click();
-    await page.getByRole('textbox', { name: 'Name' }).fill('Test Product');
-    await page.getByRole('textbox').nth(1).click();
-    await page.getByRole('textbox').nth(1).fill('Test Product Description');
-    await page.getByRole('textbox', { name: 'Category' }).click();
-    await page.getByText('Test Category').click();
-    await page.getByRole('button', { name: 'Upload Image' }).click();
-    await expect(page.getByRole('heading', { name: 'Insert Media' })).toBeVisible();
-    await page.getByRole('button', { name: 'Upload Files' }).click();
-    await page.getByRole('button', { name: 'Add from URL' }).click();
-    await page.getByRole('textbox', { name: 'https://' }).fill('https://st4.depositphotos.com/14431644/37827/i/450/depositphotos_378271014-stock-photo-word-writing-text-product-test.jpg');
-    await page.getByRole('button', { name: 'Add media' }).click();
-    //need network and dom load wait here
-    await page.waitForLoadState('networkidle');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
-    await page.getByRole('button', { name: 'Select' }).click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
-    await page.getByRole('spinbutton', { name: 'Regular Price' }).click();
-    await page.getByRole('spinbutton', { name: 'Regular Price' }).fill('1200');
-    await page.getByRole('spinbutton', { name: 'Sale Price' }).click();
-    await page.getByRole('spinbutton', { name: 'Sale Price' }).fill('1000');
-    await page.locator('.css-hvcrzd').first().click();
-    await page.getByRole('option', { name: 'Free Shipping' }).click();
-    await page.getByRole('spinbutton', { name: 'Weight' }).click();
-    await page.getByRole('spinbutton', { name: 'Weight' }).fill('1');
-    await page.getByPlaceholder('Height').click();
-    await page.getByPlaceholder('Height').fill('200');
-    await page.getByPlaceholder('Width').click();
-    await page.getByPlaceholder('Width').fill('200');
-    await page.getByPlaceholder('Length').click();
-    await page.getByPlaceholder('Length').fill('200');
-    await page.getByText('Draft').click();
-    await page.getByRole('option', { name: 'Published' }).click();
-    await page.getByRole('combobox', { name: 'Brand' }).click();
-    await page.getByRole('option', { name: 'Test Brand' }).click();
-    await page.getByRole('combobox', { name: 'Collection' }).click();
-    await page.getByRole('option', { name: 'Test Collection' }).click();
-    await page.getByRole('button', { name: 'Create Product' }).click();
-    await expect(page.getByText('Product created successfully')).toBeVisible();
+const STORAGE_STATE_PATH = 'tests/fixtures/vendorStorageState.json';
+
+let browser: Browser;
+let context: BrowserContext;
+let page: Page;
+let productPage: VendorProductPage;
+
+test.beforeAll(async () => {
+    // ✅ Clear any previous session before starting
+    if (fs.existsSync(STORAGE_STATE_PATH)) {
+        fs.writeFileSync(STORAGE_STATE_PATH, '{}');
+    }
+
+    browser = await chromium.launch();
+    context = await browser.newContext();
+    page = await context.newPage();
+
+    // Login once using VendorAuthenticationPage
+    const vendorAuthPage = new VendorAuthenticationPage(page);
+    await vendorAuthPage.vendorLogin();
+
+    // ✅ Save session (cookies, tokens) for reuse
+    await context.storageState({ path: STORAGE_STATE_PATH });
+    console.log('✅ Vendor session saved to tests/fixtures/vendorStorageState.json');
+});
+
+test.describe('Vendor - Product Management', () => {
+    test('Create Product with Brand and Collection', async () => {
+        const productData = {
+            name: 'Test Product',
+            description: 'Test Product Description',
+            category: 'Test Category',
+            imageUrl: 'https://st4.depositphotos.com/14431644/37827/i/450/depositphotos_378271014-stock-photo-word-writing-text-product-test.jpg',
+            regularPrice: '1200',
+            salePrice: '1000',
+            shipping: 'Free Shipping',
+            weight: '1',
+            height: '200',
+            width: '200',
+            length: '200',
+            status: 'Published',
+            brand: 'Test Brand',
+            collection: 'Test Collection'
+        };
+
+        // Initialize VendorProductPage
+        productPage = new VendorProductPage(page);
+
+        // Create product
+        await productPage.createProduct(productData);
+
+        // Verify product was created successfully
+        await productPage.verifyProductCreatedSuccessfully();
+    });
+});
+
+// Clear cookies after finishing the test suite
+test.afterAll(async () => {
+    fs.writeFileSync(STORAGE_STATE_PATH, '{}');
+    await browser.close();
+    console.log('✅ Browser closed and vendor session cleared');
 });
