@@ -34,13 +34,23 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // ========== SETUP PROJECT - Auth credentials save করবে ==========
     {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        // storageState: 'adminStorageState.json',
-      }
+      name: 'setup',
+      testMatch: /.*auth\.setup\.ts/,
     },
+
+    // ========== CHROMIUM PROJECT - Main test runner ==========
+    // {
+    //   name: 'chromium',
+    //   use: {
+    //     ...devices['Desktop Chrome'],
+    //     storageState: 'playwright/.auth/admin.json',
+    //   },
+    //   // dependencies: ['setup'],
+    // },
+
+    // ========== ADMIN PRE SETUP - Category, Brand, Collection create করবে ==========
     {
       name: "adminPreSetup",
       testMatch: [
@@ -49,13 +59,22 @@ export default defineConfig({
         'tests/admin/brandCreate.spec.ts',
         'tests/admin/collectionCreate.spec.ts',
       ],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/admin.json',
+      },
+      // dependencies: ['setup'],
     },
+
+    // ========== CLEANUP PROJECT - সব delete করবে ==========
     {
-      name: "cleanup",
-      testMatch: [
-        //TODO: Add more tests here''
-      ],
-    }
+      // name: "cleanup",
+      // testMatch: [
+      //   //TODO: Add more tests here''
+      // ],
+      // use: { storageState: 'playwright/.auth/admin.json' },
+      // // dependencies: ['setup'],
+    },
 
     // {
     //   name: 'firefox',

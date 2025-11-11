@@ -1,43 +1,16 @@
-import { test, Browser, BrowserContext, Page, chromium } from '@playwright/test';
-import { adminAuthenticationPage } from '../../pages/admin/adminAuthPage';
+import { test } from '../fixtures/auth.fixtures';
 import { CategoryManagementPage } from '../../pages/admin/productCategoryPage';
-import * as fs from 'fs';
-
-let browser: Browser;
-let context: BrowserContext;
-let page: Page;
-let categoryPage: CategoryManagementPage;
-
-const STORAGE_STATE_PATH = 'tests/fixtures/adminStorageState.json';
-
-test.beforeAll(async () => {
-    // ✅ Clear any previous session before starting
-    if (fs.existsSync(STORAGE_STATE_PATH)) {
-        fs.writeFileSync(STORAGE_STATE_PATH, '{}');
-    }
-
-    browser = await chromium.launch();
-    context = await browser.newContext();
-    page = await context.newPage();
-
-    // Login once using adminAuthenticationPage
-    const authPage = new adminAuthenticationPage(page);
-    await authPage.adminLogin();
-
-    // ✅ Save session (cookies, tokens) for reuse
-    await context.storageState({ path: STORAGE_STATE_PATH });
-    console.log('✅ Admin session saved successfully');
-});
 
 test.describe('Admin - Category Management', () => {
-    test('Create Category', async () => {
+    test('Create Category', async ({ adminPage }) => {
         const categoryData = {
             name: 'Test Category',
             description: 'Test Category Description'
         };
 
+        // ✅ adminPage.page = authenticated page (already logged in as admin)
         // Initialize CategoryManagementPage
-        categoryPage = new CategoryManagementPage(page);
+        const categoryPage = new CategoryManagementPage(adminPage.page);
 
         // Create category
         await categoryPage.createCategory(categoryData);
@@ -45,11 +18,4 @@ test.describe('Admin - Category Management', () => {
         // Verify category was created successfully via notification
         await categoryPage.verifyCategoryCreatedSuccessfully();
     });
-});
-
-// Clear cookies after finishing the test suite
-test.afterAll(async () => {
-    fs.writeFileSync(STORAGE_STATE_PATH, '{}');
-    await browser.close();
-    console.log('✅ Browser closed and session cleared');
 });
