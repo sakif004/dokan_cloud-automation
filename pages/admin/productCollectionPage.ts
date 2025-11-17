@@ -25,6 +25,14 @@ export class CollectionManagementPage {
     // Notification
     readonly successNotification: Locator;
 
+    // Collection list & delete controls
+    readonly collectionSearchInput: Locator;
+    readonly collectionRowActionButton: Locator;
+    readonly deleteButton: Locator;
+    readonly deleteConfirmHeading: Locator;
+    readonly yesDeleteButton: Locator;
+    readonly deleteSuccessMessage: Locator;
+
     constructor(page: Page) {
         this.page = page;
 
@@ -48,6 +56,14 @@ export class CollectionManagementPage {
 
         // Notification
         this.successNotification = page.getByText('Created Successfully');
+
+        // Collection list & delete controls
+        this.collectionSearchInput = page.getByRole('textbox', { name: 'Search Collections...' });
+        this.collectionRowActionButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(4);
+        this.deleteButton = page.getByRole('button', { name: 'Delete' });
+        this.deleteConfirmHeading = page.getByRole('heading', { name: 'Are you sure want to delete' });
+        this.yesDeleteButton = page.getByRole('button', { name: 'Yes, Delete' });
+        this.deleteSuccessMessage = page.getByText('Collection has been deleted.');
     }
 
     /**
@@ -170,5 +186,54 @@ export class CollectionManagementPage {
     async verifyCollectionInList(collectionName: string) {
         const collectionRow = this.page.locator(`text=${collectionName}`);
         await expect(collectionRow).toBeVisible({ timeout: 10000 });
+    }
+
+    /**
+     * Search collection by name using search bar (for delete flow)
+     */
+    async searchCollectionByNameForDelete(collectionName: string) {
+        await this.collectionSearchInput.click();
+        await this.collectionSearchInput.fill(collectionName);
+        await this.collectionSearchInput.press('Enter');
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
+    }
+
+    /**
+     * Open delete dialog for the first collection in the result list
+     */
+    async openDeleteDialogForFirstResult() {
+        await this.collectionRowActionButton.click();
+        await this.deleteButton.click();
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
+        await expect(this.deleteConfirmHeading).toBeVisible();
+    }
+
+    /**
+     * Confirm collection deletion
+     */
+    async confirmDeleteCollection() {
+        await this.yesDeleteButton.click();
+    }
+
+    /**
+     * Verify collection deletion success message
+     */
+    async verifyCollectionDeleted() {
+        await expect(this.deleteSuccessMessage).toBeVisible();
+    }
+
+    /**
+     * Full delete flow: search, open dialog, confirm, verify
+     */
+    async deleteCollectionByName(collectionName: string) {
+        await this.navigateToCollections();
+        await this.searchCollectionByNameForDelete(collectionName);
+        await this.openDeleteDialogForFirstResult();
+        await this.confirmDeleteCollection();
+        await this.verifyCollectionDeleted();
     }
 }
