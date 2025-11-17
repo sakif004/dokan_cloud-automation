@@ -60,6 +60,7 @@ export default defineConfig({
         'tests/admin/collectionCreate.spec.ts',
         'tests/admin/deleteProduct.spec.ts',
         'tests/admin/deleteCategory.spec.ts',
+        'tests/admin/deleteBrand.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

@@ -24,6 +24,14 @@ export class BrandManagementPage {
     // Notification
     readonly successNotification: Locator;
 
+    // Brand list & delete controls
+    readonly brandSearchInput: Locator;
+    readonly brandRowActionButton: Locator;
+    readonly deleteButton: Locator;
+    readonly deleteConfirmHeading: Locator;
+    readonly yesDeleteButton: Locator;
+    readonly deleteSuccessMessage: Locator;
+
     constructor(page: Page) {
         this.page = page;
 
@@ -46,6 +54,14 @@ export class BrandManagementPage {
 
         // Notification
         this.successNotification = page.getByText('Brand created successfully.');
+
+        // Brand list & delete controls
+        this.brandSearchInput = page.getByRole('textbox', { name: 'Search Brand...' });
+        this.brandRowActionButton = page.getByRole('table').getByRole('button').filter({ hasText: /^$/ });
+        this.deleteButton = page.getByRole('button', { name: 'Delete' });
+        this.deleteConfirmHeading = page.getByRole('heading', { name: 'Are you sure you want to' });
+        this.yesDeleteButton = page.getByRole('button', { name: 'Yes, Delete' });
+        this.deleteSuccessMessage = page.getByText('Brand deleted successfully.');
     }
 
     /**
@@ -169,5 +185,54 @@ export class BrandManagementPage {
     async verifyBrandInList(brandName: string) {
         const brandRow = this.page.locator(`text=${brandName}`);
         await expect(brandRow).toBeVisible({ timeout: 10000 });
+    }
+
+    /**
+     * Search brand by name using the search bar (for delete flow)
+     */
+    async searchBrandByNameForDelete(brandName: string) {
+        await this.brandSearchInput.click();
+        await this.brandSearchInput.fill(brandName);
+        await this.brandSearchInput.press('Enter');
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
+    }
+
+    /**
+     * Open delete confirmation dialog for the first brand in the result list
+     */
+    async openDeleteDialogForFirstResult() {
+        await this.brandRowActionButton.first().click();
+        await this.deleteButton.click();
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
+        await expect(this.deleteConfirmHeading).toBeVisible();
+    }
+
+    /**
+     * Confirm brand deletion
+     */
+    async confirmDeleteBrand() {
+        await this.yesDeleteButton.click();
+    }
+
+    /**
+     * Verify brand deletion success message
+     */
+    async verifyBrandDeleted() {
+        await expect(this.deleteSuccessMessage).toBeVisible();
+    }
+
+    /**
+     * Full delete flow: search, open dialog, confirm, verify
+     */
+    async deleteBrandByName(brandName: string) {
+        await this.navigateToBrands();
+        await this.searchBrandByNameForDelete(brandName);
+        await this.openDeleteDialogForFirstResult();
+        await this.confirmDeleteBrand();
+        await this.verifyBrandDeleted();
     }
 }
