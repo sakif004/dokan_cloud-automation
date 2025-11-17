@@ -65,6 +65,17 @@ export default defineConfig({
       },
       // dependencies: ['setup'],
     },
+    {
+      name: "vendorProductCreation",
+      testMatch: [
+        'productCreate.spec.ts',
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/admin.json',
+      },
+      // dependencies: ['setup'],
+    },
 
     // ========== CLEANUP PROJECT - সব delete করবে ==========
     {
