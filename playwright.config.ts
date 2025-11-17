@@ -58,10 +58,12 @@ export default defineConfig({
         'tests/admin/categoryCreate.spec.ts',
         'tests/admin/brandCreate.spec.ts',
         'tests/admin/collectionCreate.spec.ts',
+        'tests/admin/deleteProduct.spec.ts',
+        'tests/admin/deleteCategory.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/admin.json',
+        // storageState: 'playwright/.auth/admin.json',
       },
       // dependencies: ['setup'],
     },
@@ -72,18 +74,21 @@ export default defineConfig({
       ],
       use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/admin.json',
+        // storageState: 'playwright/.auth/admin.json',
       },
       // dependencies: ['setup'],
     },
 
     // ========== CLEANUP PROJECT - সব delete করবে ==========
     {
-      // name: "cleanup",
-      // testMatch: [
-      //   //TODO: Add more tests here''
-      // ],
-      // use: { storageState: 'playwright/.auth/admin.json' },
+      name: "cleanup",
+      testMatch: [
+        //TODO: Add more tests here''
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        // storageState: 'playwright/.auth/admin.json',
+      },
       // // dependencies: ['setup'],
     },
 

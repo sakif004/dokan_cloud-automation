@@ -18,6 +18,14 @@ export class CategoryManagementPage {
     readonly notificationRegion: Locator;
     readonly notificationListItem: Locator;
 
+    // Category list & delete controls
+    readonly categorySearchInput: Locator;
+    readonly categoryRowActionButton: Locator;
+    readonly deleteButton: Locator;
+    readonly deleteConfirmHeading: Locator;
+    readonly yesDeleteButton: Locator;
+    readonly deleteSuccessMessage: Locator;
+
     constructor(page: Page) {
         this.page = page;
 
@@ -34,6 +42,14 @@ export class CategoryManagementPage {
         // Notification
         this.notificationRegion = page.getByRole('region', { name: 'Notifications alt+T' });
         this.notificationListItem = this.notificationRegion.getByRole('listitem');
+
+        // Category list & delete controls (used for delete flow)
+        this.categorySearchInput = page.getByRole('textbox', { name: 'Search Categories...' });
+        this.categoryRowActionButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(4);
+        this.deleteButton = page.getByRole('button', { name: 'Delete' });
+        this.deleteConfirmHeading = page.getByRole('heading', { name: 'Are you sure want to delete' });
+        this.yesDeleteButton = page.getByRole('button', { name: 'Yes, Delete' });
+        this.deleteSuccessMessage = page.getByText('Category deleted.');
     }
 
     /**
@@ -126,5 +142,51 @@ export class CategoryManagementPage {
     async verifyCategoryInList(categoryName: string) {
         const categoryRow = this.page.locator(`text=${categoryName}`);
         await expect(categoryRow).toBeVisible({ timeout: 10000 });
+    }
+
+    /**
+     * Search category by name using the categories search bar (for delete flow)
+     */
+    async searchCategoryByNameForDelete(categoryName: string) {
+        await this.categorySearchInput.click();
+        await this.categorySearchInput.fill(categoryName);
+        await this.categorySearchInput.press('Enter');
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
+    }
+
+    /**
+     * Open delete confirmation dialog for the first category in the result list
+     */
+    async openDeleteDialogForFirstResult() {
+        await this.categoryRowActionButton.click();
+        await this.deleteButton.click();
+        await expect(this.deleteConfirmHeading).toBeVisible();
+    }
+
+    /**
+     * Confirm category deletion
+     */
+    async confirmDeleteCategory() {
+        await this.yesDeleteButton.click();
+    }
+
+    /**
+     * Verify category deletion success message
+     */
+    async verifyCategoryDeleted() {
+        await expect(this.deleteSuccessMessage).toBeVisible();
+    }
+
+    /**
+     * Full delete flow: search, open dialog, confirm, verify
+     */
+    async deleteCategoryByName(categoryName: string) {
+        await this.navigateToCategories();
+        await this.searchCategoryByNameForDelete(categoryName);
+        await this.openDeleteDialogForFirstResult();
+        await this.confirmDeleteCategory();
+        await this.verifyCategoryDeleted();
     }
 }
