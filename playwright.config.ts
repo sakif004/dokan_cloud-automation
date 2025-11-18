@@ -58,10 +58,10 @@ export default defineConfig({
         'tests/admin/categoryCreate.spec.ts',
         'tests/admin/brandCreate.spec.ts',
         'tests/admin/collectionCreate.spec.ts',
-        'tests/admin/deleteProduct.spec.ts',
-        'tests/admin/deleteCategory.spec.ts',
-        'tests/admin/deleteCollection.spec.ts',
-        'tests/admin/deleteBrand.spec.ts',
+        // 'tests/admin/deleteProduct.spec.ts',
+        // 'tests/admin/deleteCategory.spec.ts',
+        // 'tests/admin/deleteCollection.spec.ts',
+        // 'tests/admin/deleteBrand.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -73,6 +73,7 @@ export default defineConfig({
       name: "vendorProductCreation",
       testMatch: [
         'productCreate.spec.ts',
+        'tests/e2e/e2eDeleteProductRelatedThings.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
