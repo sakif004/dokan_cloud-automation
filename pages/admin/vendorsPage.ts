@@ -46,6 +46,7 @@ export class VendorManagementPage {
   async navigateToVendors() {
     await this.vendorsLink.click();
     await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**

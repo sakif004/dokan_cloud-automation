@@ -59,7 +59,8 @@ export class CollectionManagementPage {
 
         // Collection list & delete controls
         this.collectionSearchInput = page.getByRole('textbox', { name: 'Search Collections...' });
-        this.collectionRowActionButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(4);
+        this.collectionRowActionButton = page.locator('(//table//td//button)[2]');
+        
         this.deleteButton = page.getByRole('button', { name: 'Delete' });
         this.deleteConfirmHeading = page.getByRole('heading', { name: 'Are you sure want to delete' });
         this.yesDeleteButton = page.getByRole('button', { name: 'Yes, Delete' });

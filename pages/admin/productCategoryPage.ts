@@ -45,7 +45,10 @@ export class CategoryManagementPage {
 
         // Category list & delete controls (used for delete flow)
         this.categorySearchInput = page.getByRole('textbox', { name: 'Search Categories...' });
-        this.categoryRowActionButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(4);
+
+        // this.categoryRowActionButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(4);
+        this.categoryRowActionButton = page.locator('(//table//td//button)[2]');
+
         this.deleteButton = page.getByRole('button', { name: 'Delete' });
         this.deleteConfirmHeading = page.getByRole('heading', { name: 'Are you sure want to delete' });
         this.yesDeleteButton = page.getByRole('button', { name: 'Yes, Delete' });

@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: "adminPreSetup",
       testMatch: [
-        // 'tests/admin/vendorCreate.spec.ts',
+        'tests/admin/vendorCreate.spec.ts',
         'tests/admin/categoryCreate.spec.ts',
         'tests/admin/brandCreate.spec.ts',
         'tests/admin/collectionCreate.spec.ts',
@@ -73,7 +73,7 @@ export default defineConfig({
       name: "vendorProductCreation",
       testMatch: [
         'productCreate.spec.ts',
-        'tests/e2e/e2eDeleteProductRelatedThings.spec.ts',
+        'tests/e2e/e2eDeleteProductRelatedThings.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

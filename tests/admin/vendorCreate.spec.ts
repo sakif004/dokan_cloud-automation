@@ -5,14 +5,14 @@ test.describe('Admin - Vendor Management', () => {
 
     test('Create Vendor User', async ({ adminPage }) => {
         const vendorData = {
-            firstName: 'Vendor',
-            lastName: 'five',
-            storeName: 'ven_five',
+            firstName: 'Test',
+            lastName: 'Vendor',
+            storeName: 'Test_Vendor',
             country: 'United States',
             address: 'abc',
-            email: 'vendor_five@wedevs.com',
+            email: 'testvendorone@wedevs.com',
             phone: '01630741571',
-            password: 'vendor_five@wedevs.com',
+            password: 'testvendorone@wedevs.com',
             subscriptionPlan: 'Free Plan'
         };
 
