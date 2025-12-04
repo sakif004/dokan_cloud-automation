@@ -125,7 +125,7 @@ export class VendorProductPage {
     async uploadProductImageFromURL(imageUrl: string) {
         // Click Upload Image button
         await this.uploadImageButton.click();
-        await expect(this.insertMediaHeading).toBeVisible({ timeout: 10000 });
+        await this.page.waitForLoadState('domcontentloaded');
 
         // Click Upload Files button
         await this.uploadFilesButton.click();
@@ -143,6 +143,9 @@ export class VendorProductPage {
         await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
         await this.page.waitForTimeout(1000);
+
+        // Wait for Insert Media heading
+        await expect(this.insertMediaHeading).toBeVisible({ timeout: 10000 });
 
         // Select the image
         await this.selectImageButton.click();
