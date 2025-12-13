@@ -50,6 +50,19 @@ export default defineConfig({
     //   // dependencies: ['setup'],
     // },
 
+    // ========== E2E Setup Project - Create Marketplace ==========
+    {
+      name: "marketplaceSetup",
+      testMatch: [
+        'tests/e2e/e2eCreateMarketplace.spec.ts',
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+        // storageState: 'playwright/.auth/admin.json',
+      },
+      // dependencies: ['setup'],
+    },
+
     // ========== ADMIN PRE SETUP - Category, Brand, Collection create করবে ==========
     {
       name: "adminPreSetup",
