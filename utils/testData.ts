@@ -14,6 +14,9 @@ let Urls: {
     customerUrl: string;
     customerEmail: string;
     customerPassword: string;
+    dokanCloudUrl: string;
+    dokanCloudEmail: string;
+    dokanCloudPassword: string;
 } = {
     // Main Site URL
     adminUrl: process.env.ADMIN_URL || '',
@@ -25,6 +28,10 @@ let Urls: {
     customerUrl: process.env.CUSTOMER_URL || '',
     customerEmail: process.env.CUSTOMER_EMAIL || '',
     customerPassword: process.env.CUSTOMER_PASSWORD || '',
+    // Dokan Cloud (app.dokan.co)
+    dokanCloudUrl: process.env.DOKAN_CLOUD_URL || '',
+    dokanCloudEmail: process.env.DOKAN_CLOUD_EMAIL || '',
+    dokanCloudPassword: process.env.DOKAN_CLOUD_PASSWORD || '',
 
 };
 

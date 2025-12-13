@@ -1,25 +1,25 @@
-import { test } from '@playwright/test';
-import { DokanCloudLoginPage } from '../../pages/e2e/dokanCloudLoginPage';
+import { test } from '../fixtures/auth.fixtures';
 import { MarketplaceOnboardingPage } from '../../pages/e2e/marketplaceOnboardingPage';
 import { SetupGuidePage } from '../../pages/e2e/setupGuidePage';
 
 test.describe('E2E - Marketplace Creation', () => {
-    test('Create Marketplace and Complete Setup Guide', async ({ page }) => {
+    test('Create Marketplace and Complete Setup Guide', async ({ dokanCloudPage }) => {
         // The onboarding redirect can be slow; extend the test timeout.
         test.setTimeout(180000);
 
         // Initialize page objects
-        const loginPage = new DokanCloudLoginPage(page);
-        const onboardingPage = new MarketplaceOnboardingPage(page);
-        const setupGuidePage = new SetupGuidePage(page);
+        const onboardingPage = new MarketplaceOnboardingPage(dokanCloudPage.page);
+        const setupGuidePage = new SetupGuidePage(dokanCloudPage.page);
 
-        // Login to Dokan Cloud
-        // TODO: Move credentials to .env file (DOKAN_CLOUD_EMAIL, DOKAN_CLOUD_PASSWORD)
-        await loginPage.login('sakifur@wedevs.com', 'sakifur@wedevs.com');
-        await loginPage.verifyLoggedIn();
+        // Verify we're logged in and on My Stores page
+        await dokanCloudPage.page.waitForLoadState('domcontentloaded');
+        await dokanCloudPage.page.waitForLoadState('networkidle');
+        await dokanCloudPage.page.waitForTimeout(1000);
+        const myStoresHeading = dokanCloudPage.page.getByRole('heading', { name: 'My Stores' });
+        await myStoresHeading.waitFor({ state: 'visible', timeout: 10000 });
 
         // Start marketplace creation
-        await loginPage.clickCreateNewStore();
+        await dokanCloudPage.page.getByRole('button', { name: 'Create New Store' }).click();
 
         // Complete onboarding flow
         await onboardingPage.completeOnboarding({

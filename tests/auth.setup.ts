@@ -7,7 +7,7 @@ import { Urls } from '../utils/testData';
  * Auth Setup - Save authentication state for all roles
  * ================================================================================================
  * 
- * এই file এ তিনটি role এর login করা হয় এবং তাদের session save করা হয়।
+ * এই file এ চারটি role এর login করা হয় এবং তাদের session save করা হয়।
  * প্রতিটি role এর জন্য একটি .json file তৈরি হয়।
  * 
  * URLs এবং credentials .env file থেকে testData.ts দ্বারা load হয়
@@ -16,6 +16,7 @@ import { Urls } from '../utils/testData';
  * - playwright/.auth/admin.json
  * - playwright/.auth/vendor.json
  * - playwright/.auth/customer.json
+ * - playwright/.auth/dokanCloud.json
  */
 
 // ================================================================================================
@@ -135,12 +136,12 @@ setup('authenticate customer', async ({ page }) => {
         console.log('📄 Customer login page loaded');
 
         // Fill in customer email - .env থেকে email নিচ্ছি (যদি থাকে)
-        const customerEmail = process.env.CUSTOMER_EMAIL || 'customer@example.com';
+        const customerEmail = Urls.customerEmail || 'customer@example.com';
         await page.locator('#reg-email').fill(customerEmail);
         console.log(`✍️  Customer email filled: ${customerEmail}`);
 
         // Fill in customer password - .env থেকে password নিচ্ছি (যদি থাকে)
-        const customerPassword = process.env.CUSTOMER_PASSWORD || 'password';
+        const customerPassword = Urls.customerPassword || 'password';
         await page.locator('#login-password').fill(customerPassword);
         console.log('✍️  Customer password filled');
 
@@ -169,6 +170,58 @@ setup('authenticate customer', async ({ page }) => {
     }
 });
 
+// ================================================================================================
+// Dokan Cloud Authentication Setup
+// ================================================================================================
+const dokanCloudAuthFile = 'playwright/.auth/dokanCloud.json';
+
+setup('authenticate dokan cloud', async ({ page }) => {
+    console.log('🔐 Dokan Cloud Authentication Starting...');
+
+    // Check if credentials are configured (similar to customer pattern)
+    if (!Urls.dokanCloudEmail || !Urls.dokanCloudPassword) {
+        console.log('⚠️  Dokan Cloud credentials not configured in .env, skipping Dokan Cloud setup');
+        return;
+    }
+
+    // Navigate to Dokan Cloud login page - .env থেকে full URL নিচ্ছি
+    const dokanCloudUrl = Urls.dokanCloudUrl || 'https://app.dokan.co';
+    await page.goto(dokanCloudUrl + '/login');
+
+    // Wait for page to load
+    await page.waitForURL('**/login');
+    await page.waitForLoadState('domcontentloaded');
+
+    console.log('📄 Dokan Cloud login page loaded');
+
+    // Fill in Dokan Cloud email - .env থেকে email নিচ্ছি
+    const dokanCloudEmail = Urls.dokanCloudEmail;
+    await page.getByRole('textbox', { name: 'Email Address' }).click();
+    await page.getByRole('textbox', { name: 'Email Address' }).fill(dokanCloudEmail);
+    console.log(`✍️  Dokan Cloud email filled: ${dokanCloudEmail}`);
+
+    // Fill in Dokan Cloud password - .env থেকে password নিচ্ছি
+    const dokanCloudPassword = Urls.dokanCloudPassword;
+    await page.getByRole('textbox', { name: 'Password' }).click();
+    await page.getByRole('textbox', { name: 'Password' }).fill(dokanCloudPassword);
+    console.log('✍️  Dokan Cloud password filled');
+
+    // Click Sign In button
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    console.log('🖱️  Sign In button clicked');
+
+    // Wait for successful login - wait for "My Stores" heading
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    await expect(page.getByRole('heading', { name: 'My Stores' })).toBeVisible({ timeout: 10000 });
+    console.log('✅ Dokan Cloud logged in successfully');
+
+    // Save authentication state
+    await page.context().storageState({ path: dokanCloudAuthFile });
+    console.log(`💾 Dokan Cloud session saved to: ${dokanCloudAuthFile}\n`);
+});
+
 /**
  * ================================================================================================
  * Summary
@@ -176,15 +229,17 @@ setup('authenticate customer', async ({ page }) => {
  * 
  * When you run: npx playwright test --project=setup
  * 
- * এটি তিনটি setup test চালায়:
+ * এটি চারটি setup test চালায়:
  * 1. authenticate admin - .env এর ADMIN_URL, ADMIN_EMAIL, ADMIN_PASSWORD use করে
  * 2. authenticate vendor - .env এর VENDOR_URL, VENDOR_EMAIL, VENDOR_PASSWORD use করে
  * 3. authenticate customer - .env এর CUSTOMER_URL, CUSTOMER_EMAIL, CUSTOMER_PASSWORD use করে
+ * 4. authenticate dokan cloud - .env এর DOKAN_CLOUD_URL, DOKAN_CLOUD_EMAIL, DOKAN_CLOUD_PASSWORD use করে
  * 
  * প্রতিটি setup test এর পর একটি .json file তৈরি হয়:
  * - playwright/.auth/admin.json (Admin এর cookies + localStorage)
  * - playwright/.auth/vendor.json (Vendor এর cookies + localStorage)
  * - playwright/.auth/customer.json (Customer এর cookies + localStorage)
+ * - playwright/.auth/dokanCloud.json (Dokan Cloud এর cookies + localStorage)
  * 
  * এই files গুলো fixtures দ্বারা use করা হয় tests run করার সময়।
  */
