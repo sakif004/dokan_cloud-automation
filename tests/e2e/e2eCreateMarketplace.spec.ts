@@ -1,6 +1,6 @@
 import { test } from '../fixtures/auth.fixtures';
-import { MarketplaceOnboardingPage } from '../../pages/e2e/marketplaceOnboardingPage';
-import { SetupGuidePage } from '../../pages/e2e/setupGuidePage';
+import { MarketplaceOnboardingPage } from '../../pages/app_store/marketplaceOnboardingPage';
+import { SetupGuidePage } from '../../pages/admin/setupGuidePage';
 
 test.describe('E2E - Marketplace Creation', () => {
     test('Create Marketplace and Complete Setup Guide', async ({ dokanCloudPage }) => {
