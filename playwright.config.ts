@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: "marketplaceSetup",
       testMatch: [
-        'tests/e2e/e2eCreateMarketplace.spec.ts',
+        'tests/app_store/marketplaceOnboarding.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -75,6 +75,9 @@ export default defineConfig({
         // 'tests/admin/deleteCategory.spec.ts',
         // 'tests/admin/deleteCollection.spec.ts',
         // 'tests/admin/deleteBrand.spec.ts',
+        // Note: setupGuide.spec.ts should be run after marketplaceOnboarding.spec.ts
+        'tests/admin/setupGuide.spec.ts',
+        'tests/admin/test.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

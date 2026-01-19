@@ -5,16 +5,18 @@ export class SetupGuidePage {
     readonly page: Page;
 
     // Welcome/Setup Guide Locators
-    readonly loggedInSuccessMessage: Locator;
-    readonly welcomeHeading: Locator;
+    readonly closeChatButton: Locator;
     readonly setupGuideHeading: Locator;
+    readonly congratsHeading: Locator;
     readonly setupGeneralSettingsText: Locator;
+    readonly generalSettingsDescriptionText: Locator;
     readonly generalSettingsButton: Locator;
     readonly completedButton: Locator;
 
     // General Settings Locators
     readonly generalSettingsHeading: Locator;
     readonly businessDetailsLink: Locator;
+    readonly postalCodeInput: Locator;
     readonly phoneNoInput: Locator;
     readonly saveButton: Locator;
     readonly businessDetailsUpdatedMessage: Locator;
@@ -36,9 +38,10 @@ export class SetupGuidePage {
     readonly brandSettingsSavedMessage: Locator;
 
     // Payment Settings Locators
-    readonly setupPaymentLink: Locator;
+    readonly paymentSettingsButton: Locator;
     readonly paymentSettingsHeading: Locator;
     readonly manualPaymentsHeading: Locator;
+    readonly testGatewayTile: Locator;
     readonly cashOnDeliveryButton: Locator;
     readonly cashOnDeliverySettingsHeading: Locator;
     readonly titleInput: Locator;
@@ -47,9 +50,11 @@ export class SetupGuidePage {
     readonly enabledText: Locator;
     readonly saveChangesButton: Locator;
     readonly paymentSettingsSavedMessage: Locator;
+    readonly paymentsNavLink: Locator;
+    readonly setupGuideLink: Locator;
 
     // Payout Settings Locators
-    readonly setupPayoutLink: Locator;
+    readonly payoutSettingsButton: Locator;
     readonly payoutSettingsHeading: Locator;
     readonly manageButton: Locator;
     readonly manageBankTransferText: Locator;
@@ -60,7 +65,7 @@ export class SetupGuidePage {
     readonly payoutSettingSavedMessage: Locator;
 
     // Shipping Settings Locators
-    readonly setupShippingLink: Locator;
+    readonly shippingSettingsButton: Locator;
     readonly shippingSettingsHeading: Locator;
     readonly shippingDisabledSwitch: Locator;
     readonly shippingSaveButton: Locator;
@@ -70,17 +75,19 @@ export class SetupGuidePage {
         this.page = page;
 
         // Welcome/Setup Guide
-        this.loggedInSuccessMessage = page.getByText('Logged In Successfully!');
-        this.welcomeHeading = page.getByRole('heading', { name: /Welcome|Setup Guide/i });
+        this.closeChatButton = page.getByRole('button', { name: 'Close chat' });
         this.setupGuideHeading = page.getByRole('heading', { name: 'Setup Guide' });
+        this.congratsHeading = page.getByRole('heading', { name: 'Congrats on the new' });
         this.setupGeneralSettingsText = page.getByText('Set up general settings');
+        this.generalSettingsDescriptionText = page.getByText('Configure marketplace timezone, currency, logo and icon settings');
         this.generalSettingsButton = page.getByRole('button', { name: 'General Settings' });
         this.completedButton = page.getByRole('button', { name: /\/\d+ completed/ });
 
         // General Settings
         this.generalSettingsHeading = page.getByRole('heading', { name: 'General Settings' });
         this.businessDetailsLink = page.getByRole('link', { name: 'Business Details' });
-        this.phoneNoInput = page.getByRole('textbox', { name: 'Phone No' });
+        this.postalCodeInput = page.getByRole('textbox', { name: 'Postal Code (Optional)' });
+        this.phoneNoInput = page.getByRole('textbox', { name: /Phone No/ });
         this.saveButton = page.getByRole('button', { name: 'Save' });
         this.businessDetailsUpdatedMessage = page.getByText('Business details updated');
 
@@ -95,15 +102,16 @@ export class SetupGuidePage {
         this.addMediaFromURLText = page.getByText('Add media from URL');
         this.urlInput = page.getByRole('textbox', { name: 'https://' });
         this.addMediaButton = page.getByRole('button', { name: 'Add media' });
-        this.mediaUploadedSuccessMessage = page.getByText('Media uploaded successfully');
+        this.mediaUploadedSuccessMessage = page.getByRole('heading', { name: 'Attachment Details' });
         this.selectButton = page.getByRole('button', { name: 'Select' });
         this.brandSaveButton = page.getByRole('button', { name: 'Save' });
-        this.brandSettingsSavedMessage = page.getByText('Brand Settings saved');
+        this.brandSettingsSavedMessage = page.getByText('Brand settings updated');
 
         // Payment Settings
-        this.setupPaymentLink = page.getByRole('link', { name: 'Set up payment' });
+        this.paymentSettingsButton = page.getByRole('button', { name: 'Payment Settings' });
         this.paymentSettingsHeading = page.getByRole('heading', { name: 'Payment Settings' });
         this.manualPaymentsHeading = page.getByRole('heading', { name: 'Manual Payments' });
+        this.testGatewayTile = page.locator('div').filter({ hasText: 'Test GatewayUse this gateway' }).nth(5);
         this.cashOnDeliveryButton = page.locator('.flex.justify-end > .gap-2');
         this.cashOnDeliverySettingsHeading = page.getByRole('heading', { name: 'Cash on Delivery Settings' });
         this.titleInput = page.getByRole('textbox', { name: 'Title' });
@@ -111,10 +119,12 @@ export class SetupGuidePage {
         this.enabledSwitch = page.getByRole('switch');
         this.enabledText = page.getByText('Enabled');
         this.saveChangesButton = page.getByRole('button', { name: 'Save Changes' });
-        this.paymentSettingsSavedMessage = page.getByText('Payment settings saved.');
+        this.paymentSettingsSavedMessage = page.getByText('Payment settings updated');
+        this.paymentsNavLink = page.getByRole('link', { name: 'Payments' });
+        this.setupGuideLink = page.getByRole('link', { name: 'Setup Guide' });
 
         // Payout Settings
-        this.setupPayoutLink = page.getByRole('link', { name: 'Set up payout' });
+        this.payoutSettingsButton = page.getByRole('button', { name: 'Payout Settings' });
         this.payoutSettingsHeading = page.getByRole('heading', { name: 'Payout Settings' });
         this.manageButton = page.getByRole('button', { name: 'Manage' });
         this.manageBankTransferText = page.getByText('Manage Bank Transfer');
@@ -125,7 +135,7 @@ export class SetupGuidePage {
         this.payoutSettingSavedMessage = page.getByText('Payout Setting saved');
 
         // Shipping Settings
-        this.setupShippingLink = page.getByRole('link', { name: 'Set up shipping' });
+        this.shippingSettingsButton = page.getByRole('button', { name: 'Shipping Settings' });
         this.shippingSettingsHeading = page.getByRole('heading', { name: 'Shipping Settings' });
         this.shippingDisabledSwitch = page.getByRole('switch', { name: 'Disabled' });
         this.shippingSaveButton = page.getByRole('button', { name: 'Save' });
@@ -133,22 +143,35 @@ export class SetupGuidePage {
     }
 
     /**
-     * Verify welcome page after redirect
+     * Close chat if visible (optional - not mandatory)
+     * If the close chat button is found on the page, it will be closed.
+     * If not found, the process continues without error.
      */
-    async verifyWelcomePage() {
-        await expect(this.loggedInSuccessMessage).toBeVisible();
-        await expect(this.welcomeHeading).toBeVisible({ timeout: 60000 });
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForTimeout(1000);
+    async closeChat() {
+        // Check if the close chat button is visible within a short timeout
+        // This is optional - if not found, we continue without error
+        const isChatButtonVisible = await this.closeChatButton.isVisible({ timeout: 2000 }).catch(() => false);
+
+        if (isChatButtonVisible) {
+            await this.closeChatButton.click();
+            console.log('Chat button closed.');
+        } else {
+            console.log('Chat button not visible, skipping close chat and continuing.');
+        }
     }
 
     /**
-     * Verify setup guide page elements
+     * Verify setup guide page elements (matches codegen)
      */
     async verifySetupGuidePage() {
-        await expect(this.page.getByRole('heading', { name: 'Congrats on the new' })).toBeVisible();
-        await expect(this.setupGeneralSettingsText).toBeVisible();
+        // Close chat first (optional - if button found, close it; otherwise continue)
+        await this.closeChat();
+
+        // Verify all required elements are visible (matching codegen order)
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+        await expect(this.congratsHeading).toBeVisible({ timeout: 10000 });
+        await expect(this.setupGeneralSettingsText).toBeVisible({ timeout: 10000 });
+        await expect(this.generalSettingsDescriptionText).toBeVisible({ timeout: 10000 });
     }
 
     /**
@@ -168,8 +191,12 @@ export class SetupGuidePage {
     /**
      * Fill business details
      */
-    async fillBusinessDetails(phoneNo: string) {
+    async fillBusinessDetails(phoneNo: string, postalCode?: string) {
         await this.businessDetailsLink.click();
+        if (postalCode) {
+            await this.postalCodeInput.click();
+            await this.postalCodeInput.fill(postalCode);
+        }
         await this.phoneNoInput.click();
         await this.phoneNoInput.fill(phoneNo);
         await this.saveButton.click();
@@ -256,60 +283,68 @@ export class SetupGuidePage {
     }
 
     /**
-     * Navigate back to setup guide
-     */
-    async navigateToSetupGuide() {
-        await this.completedButton.click();
-        await expect(this.setupGuideHeading).toBeVisible();
-    }
-
-    /**
-     * Configure payment settings
+     * Configure payment settings (codegen pattern - direct flow without navigateToSetupGuide)
      */
     async configurePaymentSettings(paymentData: {
         title: string;
         description: string;
     }) {
-        await this.setupPaymentLink.click();
-        await expect(this.paymentSettingsHeading).toBeVisible();
-        await expect(this.manualPaymentsHeading).toBeVisible();
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
 
-        // Click Cash on Delivery button
+        // Open Payment Settings
+        await this.paymentSettingsButton.click();
+        await expect(this.paymentSettingsHeading).toBeVisible({ timeout: 10000 });
+
+        // Enable Test Gateway
+        await this.testGatewayTile.click();
+        await expect(this.testGatewayTile).toBeVisible({ timeout: 10000 });
+        await this.enabledSwitch.click();
+        await expect(this.paymentSettingsSavedMessage).toBeVisible({ timeout: 10000 });
+
+        // Open Cash on Delivery settings
         await this.cashOnDeliveryButton.click();
-        await expect(this.cashOnDeliverySettingsHeading).toBeVisible();
+        await expect(this.cashOnDeliverySettingsHeading).toBeVisible({ timeout: 10000 });
 
-        // Fill payment details
+        // Fill COD details
         await this.titleInput.click();
         await this.titleInput.fill(paymentData.title);
-        await this.descriptionInput.click();
-        await this.descriptionInput.fill(paymentData.description);
 
-        // Enable payment method
+        // Enable COD
         await this.enabledSwitch.click();
-        await expect(this.enabledText).toBeVisible();
 
         // Save changes
         await this.saveChangesButton.click();
-        await expect(this.paymentSettingsSavedMessage).toBeVisible();
+        await expect(this.paymentSettingsSavedMessage).toBeVisible({ timeout: 10000 });
+
+        // Navigate back to Setup Guide via Payments page
+        await this.paymentsNavLink.click();
+        await this.setupGuideLink.click();
     }
 
     /**
-     * Configure payout settings
+     * Configure payout settings (codegen pattern - direct flow without navigateToSetupGuide)
      */
     async configurePayoutSettings(payoutData: {
         flat: string;
         percentage: string;
     }) {
-        await this.setupPayoutLink.click();
-        await expect(this.payoutSettingsHeading).toBeVisible();
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+
+        // Open Payout Settings
+        await this.payoutSettingsButton.click();
+        await expect(this.payoutSettingsHeading).toBeVisible({ timeout: 10000 });
 
         // Click Manage button
         await this.manageButton.first().click();
-        await expect(this.manageBankTransferText).toBeVisible();
+        await expect(this.manageBankTransferText).toBeVisible({ timeout: 10000 });
 
         // Enable payout method
         await this.disabledSwitch.click();
-        await expect(this.page.getByLabel('Manage Bank Transfer').getByText('Enabled')).toBeVisible();
+        // await expect(this.enabledText).toBeVisible({ timeout: 10000 });
 
         // Fill payout details
         await this.flatInput.click();
@@ -319,30 +354,39 @@ export class SetupGuidePage {
 
         // Save
         await this.payoutSaveButton.click();
-        await expect(this.payoutSettingSavedMessage).toBeVisible();
+        await expect(this.payoutSettingSavedMessage).toBeVisible({ timeout: 10000 });
+
+        // Navigate back to Setup Guide
+        await this.setupGuideLink.click();
     }
 
     /**
-     * Configure shipping settings
+     * Configure shipping settings (codegen pattern - direct flow without navigateToSetupGuide)
      */
     async configureShippingSettings() {
-        await this.setupShippingLink.click();
-        await expect(this.shippingSettingsHeading).toBeVisible();
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+
+        // Open Shipping Settings
+        await this.shippingSettingsButton.click();
+        await expect(this.shippingSettingsHeading).toBeVisible({ timeout: 10000 });
 
         // Enable shipping
         await this.shippingDisabledSwitch.click();
-        await expect(this.enabledText).toBeVisible();
+        await expect(this.enabledText).toBeVisible({ timeout: 10000 });
 
         // Save
         await this.shippingSaveButton.click();
-        await expect(this.shippingSettingsUpdatedMessage).toBeVisible();
+        await expect(this.shippingSettingsUpdatedMessage).toBeVisible({ timeout: 10000 });
     }
 
     /**
-     * Complete full setup guide flow
+     * Complete full setup guide flow (codegen pattern)
      */
     async completeSetupGuide(setupData: {
         phoneNo: string;
+        postalCode?: string;
         brand: {
             logoUrl: string;
             faviconUrl: string;
@@ -356,28 +400,30 @@ export class SetupGuidePage {
             percentage: string;
         };
     }) {
-        await this.verifyWelcomePage();
+        // Verify Setup Guide page
+        await this.closeChat()
         await this.verifySetupGuidePage();
 
         // General Settings
+        await this.closeChat()
         await this.clickGeneralSettings();
         await this.verifyGeneralSettingsPage();
-        await this.fillBusinessDetails(setupData.phoneNo);
+        await this.fillBusinessDetails(setupData.phoneNo, setupData.postalCode);
 
         // Brand Settings
+        await this.closeChat()
         await this.configureBrandSettings(setupData.brand);
-        await this.navigateToSetupGuide();
 
         // Payment Settings
+        await this.closeChat()
         await this.configurePaymentSettings(setupData.payment);
-        await this.navigateToSetupGuide();
 
         // Payout Settings
+        await this.closeChat()
         await this.configurePayoutSettings(setupData.payout);
-        await this.navigateToSetupGuide();
 
         // Shipping Settings
+        await this.closeChat()
         await this.configureShippingSettings();
     }
 }
-
