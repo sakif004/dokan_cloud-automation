@@ -51,8 +51,9 @@ Authentication is handled through custom fixtures in `tests/fixtures/auth.fixtur
 
 **Key Points:**
 - Uses stored authentication states from `playwright/.auth/` directory
-- Provides pre-authenticated page instances: `adminPage`, `vendorPage`, `customerPage`
+- Provides pre-authenticated page instances: `adminPage`, `vendorPage`, `customerPage`, `dokanCloudPage`
 - Each fixture creates a new browser context with saved session state
+- Dokan Cloud fixture is optional - skips gracefully if credentials not configured
 
 **Usage in Tests:**
 ```typescript
@@ -63,12 +64,19 @@ test('Admin test', async ({ adminPage }) => {
     const categoryPage = new CategoryManagementPage(adminPage.page);
     // Use page object methods...
 });
+
+test('E2E Marketplace test', async ({ dokanCloudPage }) => {
+    // dokanCloudPage.page is already authenticated to app.dokan.co
+    const onboardingPage = new MarketplaceOnboardingPage(dokanCloudPage.page);
+    // Use page object methods...
+});
 ```
 
 ### 3. Authentication Setup
 Authentication states are created via `tests/auth.setup.ts` which:
-- Logs in as Admin, Vendor, and Customer
-- Saves session states to `playwright/.auth/admin.json`, `vendor.json`, `customer.json`
+- Logs in as Admin, Vendor, Customer, and Dokan Cloud user
+- Saves session states to `playwright/.auth/admin.json`, `vendor.json`, `customer.json`, `dokanCloud.json`
+- All credentials loaded from `.env` file via `utils/testData.ts`
 - Run with: `npx playwright test --project=setup`
 
 ---
@@ -84,7 +92,11 @@ My Dokan Automation/
 │   │   ├── productBrandPage.ts     # Brand management
 │   │   ├── productCollectionPage.ts # Collection management
 │   │   ├── productManagementPage.ts # Product CRUD operations
+│   │   ├── setupGuidePage.ts       # Setup guide (post-marketplace creation)
 │   │   └── vendorsPage.ts          # Vendor management
+│   ├── app_store/                  # Dokan Cloud (app.dokan.co) page objects
+│   │   ├── dokanCloudLoginPage.ts  # Dokan Cloud login page
+│   │   └── marketplaceOnboardingPage.ts # Marketplace creation/onboarding
 │   ├── vendor/                      # Vendor role page objects
 │   │   ├── vendorAuthPage.ts
 │   │   └── productCreatePage.ts
@@ -106,6 +118,8 @@ My Dokan Automation/
 │   │   └── productCreate.spec.ts
 │   ├── customer/                    # Customer test suites (placeholder)
 │   ├── e2e/                         # End-to-end test suites
+│   │   ├── e2eCreateMarketplace.spec.ts # Full marketplace creation flow
+│   │   └── e2eDeleteProductRelatedThings.spec.ts
 │   ├── fixtures/                    # Custom test fixtures
 │   │   └── auth.fixtures.ts         # Authentication fixtures
 │   └── auth.setup.ts                # Authentication setup script
@@ -117,7 +131,8 @@ My Dokan Automation/
 │   └── .auth/                       # Stored authentication states
 │       ├── admin.json
 │       ├── vendor.json
-│       └── customer.json
+│       ├── customer.json
+│       └── dokanCloud.json
 │
 ├── playwright.config.ts             # Playwright configuration
 ├── package.json                     # Dependencies
@@ -131,9 +146,12 @@ My Dokan Automation/
 ### 1. Naming Conventions
 
 **Page Objects:**
-- Class names: `{Feature}ManagementPage` (e.g., `CategoryManagementPage`)
-- File names: `product{Feature}Page.ts` (e.g., `productCategoryPage.ts`)
-- Methods: camelCase with descriptive names (e.g., `navigateToCategories()`)
+- Class names: `{Feature}ManagementPage` or `{Feature}Page` (e.g., `CategoryManagementPage`, `MarketplaceOnboardingPage`)
+- File names: 
+  - Admin pages: `product{Feature}Page.ts` (e.g., `productCategoryPage.ts`)
+  - App Store pages: `{feature}Page.ts` (e.g., `marketplaceOnboardingPage.ts`)
+  - Admin-specific: `setupGuidePage.ts`
+- Methods: camelCase with descriptive names (e.g., `navigateToCategories()`, `completeOnboarding()`)
 
 **Test Files:**
 - File names: `{action}{entity}.spec.ts` (e.g., `categoryCreate.spec.ts`, `deleteProduct.spec.ts`)
@@ -320,6 +338,11 @@ VENDOR_PASSWORD=your_vendor_password
 CUSTOMER_URL=https://your-dokan-site.com
 CUSTOMER_EMAIL=customer@example.com
 CUSTOMER_PASSWORD=your_customer_password
+
+# Dokan Cloud Configuration (app.dokan.co)
+DOKAN_CLOUD_URL=https://app.dokan.co
+DOKAN_CLOUD_EMAIL=your-email@example.com
+DOKAN_CLOUD_PASSWORD=your_password
 ```
 
 **Access in code:**
@@ -335,10 +358,14 @@ import { Urls } from '../../utils/testData';
 
 ### Project Structure in playwright.config.ts
 
-- **setup**: Authentication setup project
-- **adminPreSetup**: Creates prerequisite data (categories, brands, collections)
+- **setup**: Authentication setup project (runs `auth.setup.ts`)
+  - Authenticates Admin, Vendor, Customer, and Dokan Cloud
+  - Saves session states to `playwright/.auth/` directory
+- **marketplaceSetup**: E2E marketplace creation tests
+  - Uses `dokanCloudPage` fixture for app.dokan.co authentication
+- **adminPreSetup**: Creates prerequisite data (categories, brands, collections, vendors)
 - **vendorProductCreation**: Vendor product creation tests
-- **cleanup**: (Commented) For cleanup operations
+- **cleanup**: (Placeholder) For cleanup operations
 
 ### Running Tests
 
@@ -436,8 +463,9 @@ async search{Entity}ByNameForDelete({entity}Name: string) {
 
 ### DO's ✅
 
-1. **Always use fixtures** for authentication (`adminPage`, `vendorPage`, `customerPage`)
+1. **Always use fixtures** for authentication (`adminPage`, `vendorPage`, `customerPage`, `dokanCloudPage`)
 2. **Always use page objects** - Never interact with `page` directly in tests
+3. **Handle optional elements** - Check visibility before clicking (e.g., chat close button)
 3. **Add comments** to all methods and test steps
 4. **Use semantic locators** (`getByRole()`, `getByText()`) when possible
 5. **Wait properly** - Use `waitForLoadState()` before assertions
@@ -582,29 +610,61 @@ test.describe.serial('Test Suite', () => {
 ## 🎓 Learning Resources
 
 When working on this project, refer to:
-1. Existing page objects in `pages/admin/` for patterns
-2. Existing test files in `tests/admin/` for test structure
-3. `tests/fixtures/auth.fixtures.ts` for fixture usage
-4. `playwright.config.ts` for project configuration
+1. Existing page objects in `pages/admin/` for admin page patterns
+2. Existing page objects in `pages/app_store/` for Dokan Cloud (app.dokan.co) patterns
+3. Existing test files in `tests/admin/` for admin test structure
+4. Existing test files in `tests/e2e/` for E2E test structure
+5. `tests/fixtures/auth.fixtures.ts` for fixture usage
+6. `playwright.config.ts` for project configuration
 
 ---
 
 ## 📞 Quick Reference
 
 **Key Files:**
-- `tests/fixtures/auth.fixtures.ts` - Authentication fixtures
-- `utils/testData.ts` - Environment variables
-- `tests/auth.setup.ts` - Authentication setup
-- `playwright.config.ts` - Playwright configuration
+- `tests/fixtures/auth.fixtures.ts` - Authentication fixtures (admin, vendor, customer, dokanCloud)
+- `utils/testData.ts` - Environment variables (loads from .env)
+- `tests/auth.setup.ts` - Authentication setup (creates session files)
+- `playwright.config.ts` - Playwright configuration (projects, test matching)
+- `pages/app_store/` - Dokan Cloud page objects (app.dokan.co)
+- `pages/admin/setupGuidePage.ts` - Post-marketplace creation setup guide
 
 **Common Commands:**
-- Setup: `npx playwright test --project=setup`
-- Run all: `npx playwright test`
+- Setup authentication: `npx playwright test --project=setup`
+- Run all tests: `npx playwright test`
+- Run E2E marketplace test: `npx playwright test tests/e2e/e2eCreateMarketplace.spec.ts`
 - UI mode: `npx playwright test --ui`
 - Show report: `npx playwright show-report`
 
 ---
 
-**Last Updated:** Based on current project structure
+## 🆕 Recent Updates
+
+### E2E Marketplace Creation Flow
+- **Page Objects**: `pages/app_store/` folder for Dokan Cloud (app.dokan.co) pages
+  - `dokanCloudLoginPage.ts` - Handles login to app.dokan.co
+  - `marketplaceOnboardingPage.ts` - Handles marketplace creation and onboarding flow
+- **Admin Setup Guide**: `pages/admin/setupGuidePage.ts` - Handles post-creation setup (General Settings, Brand, Payment, Payout, Shipping)
+- **Authentication**: Added Dokan Cloud authentication support
+  - `DOKAN_CLOUD_URL`, `DOKAN_CLOUD_EMAIL`, `DOKAN_CLOUD_PASSWORD` in `.env`
+  - `dokanCloudPage` fixture in `auth.fixtures.ts` (optional - skips gracefully if credentials not configured)
+  - `authenticate dokan cloud` setup in `auth.setup.ts`
+  - Session saved to `playwright/.auth/dokanCloud.json`
+
+### Key Patterns for E2E Tests
+- Use `dokanCloudPage` fixture for app.dokan.co authentication
+- Handle optional elements (e.g., chat close button) with visibility checks before clicking
+- Use simplified address autocomplete with manual fallback for Division/City fields
+- Extended timeouts for slow onboarding redirects (120s+ for marketplace creation)
+- Wait for "Insert Media" heading after clicking "Add media" button (consistent pattern across all image uploads)
+
+### Project Structure Changes
+- Removed `pages/e2e/` folder (no longer needed)
+- Added `pages/app_store/` for Dokan Cloud pages
+- Moved `setupGuidePage.ts` to `pages/admin/` (admin page)
+
+---
+
+**Last Updated:** December 2024
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 
