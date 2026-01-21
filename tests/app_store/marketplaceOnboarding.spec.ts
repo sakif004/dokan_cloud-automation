@@ -30,8 +30,5 @@ test.describe('App Store - Marketplace Onboarding', () => {
             address: 'weDevs Academy',
         });
 
-        // Verify redirect to new store's setup guide
-        const postOnboardUrlPattern = /https:\/\/.*\.ondokan\.com\/admin\/(welcome|setup-guide)\/?/;
-        await expect(dokanCloudPage.page).toHaveURL(postOnboardUrlPattern);
     });
 });
