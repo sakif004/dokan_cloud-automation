@@ -1,13 +1,14 @@
 import { test } from '../fixtures/auth.fixtures';
 import { SetupGuidePage } from '../../pages/admin/setupGuidePage';
+import { Urls } from '../../utils/testData';
 
 test.describe('Admin - Setup Guide', () => {
     test('Complete Setup Guide', async ({ adminPage }) => {
         // The setup guide can take time; extend the test timeout.
         test.setTimeout(180000);
 
-        // Navigate directly to the setup guide page
-        const setupGuideUrl = 'https://amazonbd2.ondokan.com/admin/setup-guide';
+        // Navigate to the setup guide page using dynamic URL from environment
+        const setupGuideUrl = `${Urls.adminUrl}/admin/setup-guide`;
         await adminPage.page.goto(setupGuideUrl, {
             waitUntil: 'domcontentloaded',
             timeout: 60000
