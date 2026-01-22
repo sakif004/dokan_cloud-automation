@@ -11,7 +11,7 @@ export class SetupGuidePage {
     readonly setupGeneralSettingsText: Locator;
     readonly generalSettingsDescriptionText: Locator;
     readonly generalSettingsButton: Locator;
-    readonly completedButton: Locator;
+    readonly setupGuideLink: Locator;
 
     // General Settings Locators
     readonly generalSettingsHeading: Locator;
@@ -38,7 +38,6 @@ export class SetupGuidePage {
     readonly brandSettingsSavedMessage: Locator;
 
     // Payment Settings Locators
-    readonly setupPaymentLink: Locator;
     readonly paymentSettingsButton: Locator;
     readonly paymentSettingsHeading: Locator;
     readonly manualPaymentsHeading: Locator;
@@ -54,18 +53,19 @@ export class SetupGuidePage {
     readonly paymentsNavLink: Locator;
 
     // Payout Settings Locators
-    readonly setupPayoutLink: Locator;
+    readonly payoutSettingsButton: Locator;
     readonly payoutSettingsHeading: Locator;
     readonly manageButton: Locator;
     readonly manageBankTransferText: Locator;
     readonly disabledSwitch: Locator;
+    readonly bankPayoutEnabledText: Locator;
     readonly flatInput: Locator;
     readonly percentageInput: Locator;
     readonly payoutSaveButton: Locator;
     readonly payoutSettingSavedMessage: Locator;
 
     // Shipping Settings Locators
-    readonly setupShippingLink: Locator;
+    readonly shippingSettingsButton: Locator;
     readonly shippingSettingsHeading: Locator;
     readonly shippingDisabledSwitch: Locator;
     readonly shippingSaveButton: Locator;
@@ -81,7 +81,7 @@ export class SetupGuidePage {
         this.setupGeneralSettingsText = page.getByText('Set up general settings');
         this.generalSettingsDescriptionText = page.getByText('Configure marketplace timezone, currency, logo and icon settings');
         this.generalSettingsButton = page.getByRole('button', { name: 'General Settings' });
-        this.completedButton = page.getByRole('button', { name: /\/\d+ completed/ });
+        this.setupGuideLink = page.getByRole('link', { name: 'Setup Guide' });
 
         // General Settings
         this.generalSettingsHeading = page.getByRole('heading', { name: 'General Settings' });
@@ -108,11 +108,10 @@ export class SetupGuidePage {
         this.brandSettingsSavedMessage = page.getByText('Brand settings updated');
 
         // Payment Settings
-        this.setupPaymentLink = page.getByRole('link', { name: 'Set up payment' });
         this.paymentSettingsButton = page.getByRole('button', { name: 'Payment Settings' });
         this.paymentSettingsHeading = page.getByRole('heading', { name: 'Payment Settings' });
         this.manualPaymentsHeading = page.getByRole('heading', { name: 'Manual Payments' });
-        this.testGatewayTile = page.locator('div').filter({ hasText: 'Test Gateway' }).nth(5);
+        this.testGatewayTile = page.locator('div').filter({ hasText: 'Test GatewayUse this gateway' }).nth(5);
         this.cashOnDeliveryButton = page.locator('.flex.justify-end > .gap-2');
         this.cashOnDeliverySettingsHeading = page.getByRole('heading', { name: 'Cash on Delivery Settings' });
         this.titleInput = page.getByRole('textbox', { name: 'Title' });
@@ -124,18 +123,19 @@ export class SetupGuidePage {
         this.paymentsNavLink = page.getByRole('link', { name: 'Payments' });
 
         // Payout Settings
-        this.setupPayoutLink = page.getByRole('link', { name: 'Set up payout' });
+        this.payoutSettingsButton = page.getByRole('button', { name: 'Payout Settings' });
         this.payoutSettingsHeading = page.getByRole('heading', { name: 'Payout Settings' });
         this.manageButton = page.getByRole('button', { name: 'Manage' });
         this.manageBankTransferText = page.getByText('Manage Bank Transfer');
         this.disabledSwitch = page.getByRole('switch', { name: 'Disabled' });
+        this.bankPayoutEnabledText = page.getByLabel('Manage Bank Transfer').getByText('Enabled');
         this.flatInput = page.getByRole('textbox', { name: 'Flat' });
         this.percentageInput = page.getByRole('textbox', { name: 'Percentage' });
         this.payoutSaveButton = page.getByRole('button', { name: 'Save' });
         this.payoutSettingSavedMessage = page.getByText('Payout Setting saved');
 
         // Shipping Settings
-        this.setupShippingLink = page.getByRole('link', { name: 'Set up shipping' });
+        this.shippingSettingsButton = page.getByRole('button', { name: 'Shipping Settings' });
         this.shippingSettingsHeading = page.getByRole('heading', { name: 'Shipping Settings' });
         this.shippingDisabledSwitch = page.getByRole('switch', { name: 'Disabled' });
         this.shippingSaveButton = page.getByRole('button', { name: 'Save' });
@@ -280,28 +280,27 @@ export class SetupGuidePage {
         // Save brand settings
         await this.brandSaveButton.click();
         await expect(this.brandSettingsSavedMessage).toBeVisible();
+
+        // Navigate back to Setup Guide
+        await this.setupGuideLink.click();
     }
 
     /**
-     * Navigate back to setup guide
-     */
-    async navigateToSetupGuide() {
-        await this.completedButton.click();
-        await expect(this.setupGuideHeading).toBeVisible();
-    }
-
-    /**
-     * Configure payment settings
+     * Configure payment settings (codegen pattern - direct flow)
      */
     async configurePaymentSettings(paymentData: {
         title: string;
         description: string;
     }) {
-        // Open Payment Settings from Setup Guide
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+
+        // Open Payment Settings
         await this.paymentSettingsButton.click();
         await expect(this.paymentSettingsHeading).toBeVisible({ timeout: 10000 });
 
-        // Enable Test Gateway (as in codegen)
+        // Enable Test Gateway
         await this.testGatewayTile.click();
         await expect(this.testGatewayTile).toBeVisible({ timeout: 10000 });
         await this.enabledSwitch.click();
@@ -314,8 +313,6 @@ export class SetupGuidePage {
         // Fill COD details
         await this.titleInput.click();
         await this.titleInput.fill(paymentData.title);
-        await this.descriptionInput.click();
-        await this.descriptionInput.fill(paymentData.description);
 
         // Enable COD
         await this.enabledSwitch.click();
@@ -324,28 +321,33 @@ export class SetupGuidePage {
         await this.saveChangesButton.click();
         await expect(this.paymentSettingsSavedMessage).toBeVisible({ timeout: 10000 });
 
-        // Navigate back to Setup Guide via Payments page (as in codegen)
+        // Navigate back to Setup Guide via Payments page
         await this.paymentsNavLink.click();
-        await this.page.getByRole('link', { name: 'Setup Guide' }).click();
+        await this.setupGuideLink.click();
     }
 
     /**
-     * Configure payout settings
+     * Configure payout settings (codegen pattern - direct flow)
      */
     async configurePayoutSettings(payoutData: {
         flat: string;
         percentage: string;
     }) {
-        await this.setupPayoutLink.click();
-        await expect(this.payoutSettingsHeading).toBeVisible();
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+
+        // Open Payout Settings
+        await this.payoutSettingsButton.click();
+        await expect(this.payoutSettingsHeading).toBeVisible({ timeout: 10000 });
 
         // Click Manage button
         await this.manageButton.first().click();
-        await expect(this.manageBankTransferText).toBeVisible();
+        await expect(this.manageBankTransferText).toBeVisible({ timeout: 10000 });
 
         // Enable payout method
         await this.disabledSwitch.click();
-        await expect(this.page.getByLabel('Manage Bank Transfer').getByText('Enabled')).toBeVisible();
+        await expect(this.bankPayoutEnabledText).toBeVisible({ timeout: 10000 });
 
         // Fill payout details
         await this.flatInput.click();
@@ -355,23 +357,31 @@ export class SetupGuidePage {
 
         // Save
         await this.payoutSaveButton.click();
-        await expect(this.payoutSettingSavedMessage).toBeVisible();
+        await expect(this.payoutSettingSavedMessage).toBeVisible({ timeout: 10000 });
+
+        // Navigate back to Setup Guide
+        await this.setupGuideLink.click();
     }
 
     /**
-     * Configure shipping settings
+     * Configure shipping settings (codegen pattern - direct flow)
      */
     async configureShippingSettings() {
-        await this.setupShippingLink.click();
-        await expect(this.shippingSettingsHeading).toBeVisible();
+        // Navigate to Setup Guide
+        await this.setupGuideLink.click();
+        await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
+
+        // Open Shipping Settings
+        await this.shippingSettingsButton.click();
+        await expect(this.shippingSettingsHeading).toBeVisible({ timeout: 10000 });
 
         // Enable shipping
         await this.shippingDisabledSwitch.click();
-        await expect(this.enabledText).toBeVisible();
+        await expect(this.enabledText).toBeVisible({ timeout: 10000 });
 
         // Save
         await this.shippingSaveButton.click();
-        await expect(this.shippingSettingsUpdatedMessage).toBeVisible();
+        await expect(this.shippingSettingsUpdatedMessage).toBeVisible({ timeout: 10000 });
     }
 
     /**
@@ -393,7 +403,7 @@ export class SetupGuidePage {
             percentage: string;
         };
     }) {
-        // await this.verifyWelcomePage();
+        // Verify Setup Guide page
         await this.verifySetupGuidePage();
 
         // General Settings
@@ -403,15 +413,12 @@ export class SetupGuidePage {
 
         // Brand Settings
         await this.configureBrandSettings(setupData.brand);
-        await this.navigateToSetupGuide();
 
         // Payment Settings
         await this.configurePaymentSettings(setupData.payment);
-        await this.navigateToSetupGuide();
 
         // Payout Settings
         await this.configurePayoutSettings(setupData.payout);
-        await this.navigateToSetupGuide();
 
         // Shipping Settings
         await this.configureShippingSettings();
