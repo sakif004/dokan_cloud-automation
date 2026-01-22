@@ -1,5 +1,6 @@
 // marketplaceOnboardingPage.ts
 import { expect, Locator, Page } from '@playwright/test';
+import { Urls } from '../../utils/testData';
 
 export class MarketplaceOnboardingPage {
     readonly page: Page;
@@ -229,8 +230,12 @@ export class MarketplaceOnboardingPage {
     async clickFinish() {
         await this.finishButton.click();
 
-        // Wait for redirect to the new store (welcome → setup-guide). Accept optional trailing slash.
-        const postOnboardUrlPattern = /https:\/\/.*\.ondokan\.com\/admin\/(welcome|setup-guide)\/?/;
+        // Extract the domain from adminUrl to create a dynamic URL pattern
+        // For production: https://amazonbd2.ondokan.com → pattern: /https:\/\/amazonbd2\.ondokan\.com\/admin\/(welcome|setup-guide)\/?/
+        // For staging: https://amazonbd2.staging.dokandev.com → pattern: /https:\/\/amazonbd2\.staging\.dokandev\.com\/admin\/(welcome|setup-guide)\/?/
+
+        const baseUrl = new URL(Urls.adminUrl).hostname.replace(/\./g, '\\.');
+        const postOnboardUrlPattern = new RegExp(`https:\\/\\/${baseUrl}\\/admin\\/(welcome|setup-guide)\\/?`);
         await this.page.waitForURL(postOnboardUrlPattern, { waitUntil: 'load', timeout: 120000 });
         await expect(this.page).toHaveURL(postOnboardUrlPattern);
     }
