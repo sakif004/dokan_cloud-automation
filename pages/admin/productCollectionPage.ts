@@ -134,6 +134,8 @@ export class CollectionManagementPage {
         // Select the image
         await this.selectImageButton.click();
         await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
     }
 
     /**
