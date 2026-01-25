@@ -89,7 +89,7 @@ export default defineConfig({
       name: "vendorProductCreation",
       testMatch: [
         'productCreate.spec.ts',
-        'tests/e2e/e2eDeleteProductRelatedThings.ts',
+        'tests/e2e/e2eDeleteProductRelatedThings.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

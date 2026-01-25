@@ -210,12 +210,16 @@ setup('authenticate dokan cloud', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     console.log('🖱️  Sign In button clicked');
 
-    // Wait for successful login - wait for "My Stores" heading
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-    await expect(page.getByRole('heading', { name: 'My Stores' })).toBeVisible({ timeout: 10000 });
+    // Wait for successful login by checking for "My Stores" heading (more reliable than networkidle)
+    // This waits for the key content to appear instead of waiting for all network activity to complete
+    await expect(page.getByRole('heading', { name: 'My Stores' })).toBeVisible({ timeout: 30000 });
     console.log('✅ Dokan Cloud logged in successfully');
+
+    // Wait for page to be fully interactive (DOM ready) before saving state
+    await page.waitForLoadState('domcontentloaded');
+
+    // Optional: Brief wait for any critical JS to execute
+    await page.waitForTimeout(1000);
 
     // Save authentication state
     await page.context().storageState({ path: dokanCloudAuthFile });
