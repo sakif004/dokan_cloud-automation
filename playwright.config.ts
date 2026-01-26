@@ -77,7 +77,7 @@ export default defineConfig({
         // 'tests/admin/deleteBrand.spec.ts',
         // Note: setupGuide.spec.ts should be run after marketplaceOnboarding.spec.ts
         'tests/admin/setupGuide.spec.ts',
-        'tests/admin/test.spec.ts',
+        'tests/admin/customer.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
