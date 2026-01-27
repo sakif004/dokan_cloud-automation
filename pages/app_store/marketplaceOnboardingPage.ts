@@ -1,16 +1,17 @@
 // marketplaceOnboardingPage.ts
 import { expect, Locator, Page } from '@playwright/test';
 import { Urls } from '../../utils/testData';
+import { ChatManager } from '../../pages/common/chatManager';
 
 export class MarketplaceOnboardingPage {
     readonly page: Page;
+    readonly chatManager: ChatManager;
 
     // Setup Marketplace Page Locators
     readonly setupMarketplaceHeading: Locator;
     readonly marketplaceNameInput: Locator;
     readonly marketplaceAvailableText: Locator;
     readonly startCreatingMarketplaceButton: Locator;
-    readonly closeChatButton: Locator;
 
     // Onboarding Questions Locators
     readonly dropdownImages: Locator;
@@ -27,13 +28,13 @@ export class MarketplaceOnboardingPage {
 
     constructor(page: Page) {
         this.page = page;
+        this.chatManager = new ChatManager(page);
 
         // Setup Marketplace
         this.setupMarketplaceHeading = page.getByRole('heading', { name: 'Setup your Marketplace' });
         this.marketplaceNameInput = page.getByRole('textbox', { name: 'Marketplace Name' });
         this.marketplaceAvailableText = page.locator('div').filter({ hasText: /^Marketplace Available$/ });
         this.startCreatingMarketplaceButton = page.getByRole('button', { name: 'Start Creating Marketplace' });
-        this.closeChatButton = page.getByRole('button', { name: 'Close chat' });
 
         // Onboarding Questions
         this.dropdownImages = page.getByRole('img');
@@ -86,17 +87,6 @@ export class MarketplaceOnboardingPage {
     }
 
     /**
-     * Close chat if visible (optional - skip if not present)
-     */
-    async closeChat() {
-        const isVisible = await this.closeChatButton.isVisible({ timeout: 2000 }).catch(() => false);
-        if (isVisible) {
-            await this.closeChatButton.click();
-            await this.page.waitForTimeout(500);
-        }
-    }
-
-    /**
      * Answer onboarding questions
      */
     async answerOnboardingQuestions(answers: {
@@ -104,8 +94,8 @@ export class MarketplaceOnboardingPage {
         teamSize: string;
         businessStatus: string;
     }) {
-        // Close chat first
-        await this.closeChat();
+        // Close chat using ChatManager
+        await this.chatManager.closeChat();
 
         // First question: Build knowledge
         await this.dropdownImages.nth(2).click();

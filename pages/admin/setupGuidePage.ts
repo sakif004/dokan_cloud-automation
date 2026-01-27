@@ -1,8 +1,12 @@
 // setupGuidePage.ts
 import { expect, Locator, Page } from '@playwright/test';
+import { ChatManager } from '../../pages/common/chatManager';
+
 
 export class SetupGuidePage {
     readonly page: Page;
+    readonly chatManager: ChatManager;
+
 
     // Welcome/Setup Guide Locators
     readonly closeChatButton: Locator;
@@ -73,6 +77,8 @@ export class SetupGuidePage {
 
     constructor(page: Page) {
         this.page = page;
+        this.chatManager = new ChatManager(page);
+
 
         // Welcome/Setup Guide
         this.closeChatButton = page.getByRole('button', { name: 'Close chat' });
@@ -142,30 +148,13 @@ export class SetupGuidePage {
         this.shippingSettingsUpdatedMessage = page.getByText('Shipping Settings updated.');
     }
 
-    /**
-     * Close chat if visible (optional - not mandatory)
-     * If the close chat button is found on the page, it will be closed.
-     * If not found, the process continues without error.
-     */
-    async closeChat() {
-        // Check if the close chat button is visible within a short timeout
-        // This is optional - if not found, we continue without error
-        const isChatButtonVisible = await this.closeChatButton.isVisible({ timeout: 2000 }).catch(() => false);
-
-        if (isChatButtonVisible) {
-            await this.closeChatButton.click();
-            console.log('Chat button closed.');
-        } else {
-            console.log('Chat button not visible, skipping close chat and continuing.');
-        }
-    }
 
     /**
      * Verify setup guide page elements (matches codegen)
      */
     async verifySetupGuidePage() {
-        // Close chat first (optional - if button found, close it; otherwise continue)
-        await this.closeChat();
+        // Close chat using ChatManager
+        await this.chatManager.closeChat();
 
         // Verify all required elements are visible (matching codegen order)
         await expect(this.setupGuideHeading).toBeVisible({ timeout: 10000 });
