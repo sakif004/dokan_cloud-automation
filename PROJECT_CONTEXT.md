@@ -85,58 +85,63 @@ Authentication states are created via `tests/auth.setup.ts` which:
 
 ```
 My Dokan Automation/
-├── pages/                          # Page Object Models
-│   ├── admin/                      # Admin role page objects
-│   │   ├── adminAuthPage.ts        # Admin login page
-│   │   ├── productCategoryPage.ts  # Category management
-│   │   ├── productBrandPage.ts     # Brand management
-│   │   ├── productCollectionPage.ts # Collection management
-│   │   ├── productManagementPage.ts # Product CRUD operations
-│   │   ├── setupGuidePage.ts       # Setup guide (post-marketplace creation)
-│   │   └── vendorsPage.ts          # Vendor management
-│   ├── app_store/                  # Dokan Cloud (app.dokan.co) page objects
-│   │   ├── dokanCloudLoginPage.ts  # Dokan Cloud login page
-│   │   └── marketplaceOnboardingPage.ts # Marketplace creation/onboarding
-│   ├── vendor/                      # Vendor role page objects
+├── pages/                              # Page Object Models
+│   ├── admin/                          # Admin role page objects
+│   │   ├── adminAuthPage.ts            # Admin login page
+│   │   ├── productCategoryPage.ts      # Category management
+│   │   ├── productBrandPage.ts         # Brand management
+│   │   ├── productCollectionPage.ts    # Collection management
+│   │   ├── productManagementPage.ts    # Product CRUD operations
+│   │   ├── customerManagementPage.ts   # Customer management
+│   │   ├── setupGuidePage.ts           # Setup guide (post-marketplace creation)
+│   │   └── vendorsPage.ts              # Vendor management
+│   ├── vendor/                         # Vendor role page objects
 │   │   ├── vendorAuthPage.ts
 │   │   └── productCreatePage.ts
-│   └── customer/                    # Customer role page objects (placeholder)
+│   ├── app_store/                      # Dokan Cloud (app.dokan.co) page objects
+│   │   ├── dokanCloudLoginPage.ts      # Dokan Cloud login page
+│   │   └── marketplaceOnboardingPage.ts # Marketplace creation/onboarding
+│   └── common/                         # Shared/common helpers
+│       └── chatManager.ts              # Handles optional chat widgets
 │
-├── tests/                           # Test specifications
-│   ├── admin/                       # Admin test suites
+├── tests/                              # Test specifications
+│   ├── admin/                          # Admin test suites
 │   │   ├── adminLogin.spec.ts
 │   │   ├── categoryCreate.spec.ts
-│   │   ├── categoryDelete.spec.ts
 │   │   ├── brandCreate.spec.ts
-│   │   ├── brandDelete.spec.ts
 │   │   ├── collectionCreate.spec.ts
-│   │   ├── collectionDelete.spec.ts
-│   │   ├── productDelete.spec.ts
-│   │   └── vendorCreate.spec.ts
-│   ├── vendor/                      # Vendor test suites
+│   │   ├── vendorCreate.spec.ts
+│   │   ├── deleteCategory.spec.ts
+│   │   ├── deleteBrand.spec.ts
+│   │   ├── deleteCollection.spec.ts
+│   │   ├── deleteProduct.spec.ts
+│   │   ├── customerManagement.spec.ts
+│   │   └── setupGuide.spec.ts
+│   ├── vendor/                         # Vendor test suites
 │   │   ├── vendorLogin.spec.ts
 │   │   └── productCreate.spec.ts
-│   ├── customer/                    # Customer test suites (placeholder)
-│   ├── e2e/                         # End-to-end test suites
-│   │   ├── e2eCreateMarketplace.spec.ts # Full marketplace creation flow
+│   ├── app_store/                      # Dokan Cloud onboarding tests
+│   │   └── marketplaceOnboarding.spec.ts
+│   ├── e2e/                            # End-to-end test suites
+│   │   ├── e2eCreateMarketplace.spec.ts        # Full marketplace creation flow
 │   │   └── e2eDeleteProductRelatedThings.spec.ts
-│   ├── fixtures/                    # Custom test fixtures
-│   │   └── auth.fixtures.ts         # Authentication fixtures
-│   └── auth.setup.ts                # Authentication setup script
+│   ├── fixtures/                       # Custom test fixtures
+│   │   └── auth.fixtures.ts            # Authentication fixtures
+│   └── auth.setup.ts                   # Authentication setup script
 │
-├── utils/                           # Utility files
-│   └── testData.ts                  # Environment variables & test data
+├── utils/                              # Utility files
+│   └── testData.ts                     # Environment variables & test data
 │
-├── playwright/                      # Playwright artifacts
-│   └── .auth/                       # Stored authentication states
+├── playwright/                         # Playwright artifacts
+│   └── .auth/                          # Stored authentication states
 │       ├── admin.json
 │       ├── vendor.json
 │       ├── customer.json
 │       └── dokanCloud.json
 │
-├── playwright.config.ts             # Playwright configuration
-├── package.json                     # Dependencies
-└── .env                             # Environment variables (not in repo)
+├── playwright.config.ts                # Playwright configuration
+├── package.json                        # Dependencies
+└── .env                                # Environment variables (not in repo)
 ```
 
 ---
