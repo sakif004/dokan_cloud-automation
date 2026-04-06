@@ -196,14 +196,14 @@ setup('authenticate dokan cloud', async ({ page }) => {
 
     // Fill in Dokan Cloud email - .env থেকে email নিচ্ছি
     const dokanCloudEmail = Urls.dokanCloudEmail;
-    await page.getByRole('textbox', { name: 'Email Address' }).click();
-    await page.getByRole('textbox', { name: 'Email Address' }).fill(dokanCloudEmail);
+    await page.getByRole('textbox', { name: 'Enter your email' }).click();
+    await page.getByRole('textbox', { name: 'Enter your email' }).fill(dokanCloudEmail);
     console.log(`✍️  Dokan Cloud email filled: ${dokanCloudEmail}`);
 
     // Fill in Dokan Cloud password - .env থেকে password নিচ্ছি
     const dokanCloudPassword = Urls.dokanCloudPassword;
-    await page.getByRole('textbox', { name: 'Password' }).click();
-    await page.getByRole('textbox', { name: 'Password' }).fill(dokanCloudPassword);
+    await page.getByRole('textbox', { name: 'Write your password' }).click();
+    await page.getByRole('textbox', { name: 'Write your password' }).fill(dokanCloudPassword);
     console.log('✍️  Dokan Cloud password filled');
 
     // Click Sign In button
