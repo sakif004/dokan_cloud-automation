@@ -91,14 +91,14 @@ export class SetupGuidePage {
 
         // General Settings
         this.generalSettingsHeading = page.getByRole('heading', { name: 'General Settings' });
-        this.businessDetailsLink = page.getByRole('link', { name: 'Business Details' });
+        this.businessDetailsLink = page.getByRole('tab', { name: 'Business Details' });
         this.postalCodeInput = page.getByRole('textbox', { name: 'Postal Code (Optional)' });
         this.phoneNoInput = page.getByRole('textbox', { name: /Phone No/ });
-        this.saveButton = page.getByRole('button', { name: 'Save' });
+        this.saveButton = page.getByRole('button', { name: 'Save Changes' });
         this.businessDetailsUpdatedMessage = page.getByText('Business details updated');
 
         // Brand Settings
-        this.brandLink = page.getByRole('link', { name: 'Brand', exact: true });
+        this.brandLink = page.getByRole('tab', { name: 'Brand' });
         this.brandElementsHeading = page.getByRole('heading', { name: 'Brand Elements' });
         this.uploadImageButtons = page.getByRole('button', { name: 'Upload Image' });
         this.insertMediaHeading = page.getByRole('heading', { name: 'Insert Media' });

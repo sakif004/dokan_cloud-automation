@@ -920,6 +920,20 @@ When working on this project, refer to:
 
 ---
 
+## 🗺️ Automation Plan & Task Tracker
+
+All phases, tasks, and their statuses are tracked in **`AUTOMATION_PLAN.md`** (project root).
+
+**For new AI sessions — always read in this order:**
+1. `AUTOMATION_PLAN.md` — current task status and what to work on next
+2. `PROJECT_CONTEXT.md` (this file) — architecture, patterns, conventions
+
+**After completing any task:**
+- Update `AUTOMATION_PLAN.md` → change `⬜ Pending` to `✅ Done`
+- Update `PROJECT_CONTEXT.md` → add to Recent Updates section
+
+---
+
 ## 📝 Notes for AI Agents
 
 When working on this codebase:
