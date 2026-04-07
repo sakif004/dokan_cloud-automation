@@ -1,11 +1,13 @@
 // setupGuidePage.ts
 import { expect, Locator, Page } from '@playwright/test';
 import { ChatManager } from '../../pages/common/chatManager';
+import { MediaManager } from '../../pages/common/mediaManager';
 
 
 export class SetupGuidePage {
     readonly page: Page;
     readonly chatManager: ChatManager;
+    private readonly mediaManager: MediaManager;
 
 
     // Welcome/Setup Guide Locators
@@ -29,15 +31,6 @@ export class SetupGuidePage {
     readonly brandLink: Locator;
     readonly brandElementsHeading: Locator;
     readonly uploadImageButtons: Locator;
-    readonly insertMediaHeading: Locator;
-    readonly uploadFilesButton: Locator;
-    readonly dragAndDropText: Locator;
-    readonly addFromURLButton: Locator;
-    readonly addMediaFromURLText: Locator;
-    readonly urlInput: Locator;
-    readonly addMediaButton: Locator;
-    readonly mediaUploadedSuccessMessage: Locator;
-    readonly selectButton: Locator;
     readonly brandSaveButton: Locator;
     readonly brandSettingsSavedMessage: Locator;
 
@@ -78,7 +71,7 @@ export class SetupGuidePage {
     constructor(page: Page) {
         this.page = page;
         this.chatManager = new ChatManager(page);
-
+        this.mediaManager = new MediaManager(page);
 
         // Welcome/Setup Guide
         this.closeChatButton = page.getByRole('button', { name: 'Close chat' });
@@ -101,15 +94,6 @@ export class SetupGuidePage {
         this.brandLink = page.getByRole('tab', { name: 'Brand' });
         this.brandElementsHeading = page.getByRole('heading', { name: 'Brand Elements' });
         this.uploadImageButtons = page.getByRole('button', { name: 'Upload Image' });
-        this.insertMediaHeading = page.getByRole('heading', { name: 'Insert Media' });
-        this.uploadFilesButton = page.getByRole('button', { name: 'Upload Files' });
-        this.dragAndDropText = page.getByText('Drag and drop images and files');
-        this.addFromURLButton = page.getByRole('button', { name: 'Add from URL' });
-        this.addMediaFromURLText = page.getByText('Add media from URL');
-        this.urlInput = page.getByRole('textbox', { name: 'https://' });
-        this.addMediaButton = page.getByRole('button', { name: 'Add media' });
-        this.mediaUploadedSuccessMessage = page.getByRole('heading', { name: 'Attachment Details' });
-        this.selectButton = page.getByRole('button', { name: 'Select' });
         this.brandSaveButton = page.getByRole('button', { name: 'Save' });
         this.brandSettingsSavedMessage = page.getByText('Brand settings updated');
 
@@ -193,42 +177,16 @@ export class SetupGuidePage {
     }
 
     /**
-     * Upload image from URL (reusable method)
+     * Click the nth "Upload Image" button then delegate the full media
+     * library dialog flow to MediaManager.
+     * @param imageUrl   - Direct URL of the image to upload
+     * @param buttonIndex - Which "Upload Image" button to click (0 = logo, 1 = favicon)
      */
     async uploadImageFromURL(imageUrl: string, buttonIndex: number = 0) {
-        // Wait for Upload Image button to be available and visible
         const uploadButton = this.uploadImageButtons.nth(buttonIndex);
         await expect(uploadButton).toBeVisible({ timeout: 10000 });
         await uploadButton.click();
-        await expect(this.insertMediaHeading).toBeVisible();
-
-        // Click Upload Files button
-        await this.uploadFilesButton.click();
-        await expect(this.dragAndDropText).toBeVisible();
-
-        // Click Add from URL
-        await this.addFromURLButton.click();
-        await expect(this.addMediaFromURLText).toBeVisible();
-
-        // Fill URL
-        await this.urlInput.click();
-        await this.urlInput.fill(imageUrl);
-
-        // Click Add media button
-        await this.addMediaButton.click();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
-        await expect(this.mediaUploadedSuccessMessage).toBeVisible();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
-
-        // Select the image
-        await this.selectButton.click();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
+        await this.mediaManager.uploadFromURL(imageUrl);
     }
 
     /**
