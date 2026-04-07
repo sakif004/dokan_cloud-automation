@@ -1,8 +1,10 @@
 // vendorProductPage.ts
 import { expect, Locator, Page } from '@playwright/test';
+import { MediaManager } from '../common/mediaManager';
 
 export class VendorProductPage {
     readonly page: Page;
+    private readonly mediaManager: MediaManager;
 
     // Navigation
     readonly productsMenu: Locator;
@@ -16,12 +18,6 @@ export class VendorProductPage {
     readonly descriptionInput: Locator;
     readonly categoryInput: Locator;
     readonly uploadImageButton: Locator;
-    readonly insertMediaHeading: Locator;
-    readonly uploadFilesButton: Locator;
-    readonly addFromURLButton: Locator;
-    readonly urlInput: Locator;
-    readonly addMediaButton: Locator;
-    readonly selectImageButton: Locator;
     readonly regularPriceInput: Locator;
     readonly salePriceInput: Locator;
     readonly shippingSelect: Locator;
@@ -39,6 +35,7 @@ export class VendorProductPage {
 
     constructor(page: Page) {
         this.page = page;
+        this.mediaManager = new MediaManager(page);
 
         // Navigation
         this.productsMenu = page.locator('a').filter({ hasText: /^Products$/ });
@@ -52,12 +49,6 @@ export class VendorProductPage {
         this.descriptionInput = page.getByRole('textbox').nth(1);
         this.categoryInput = page.getByRole('textbox', { name: 'Category' });
         this.uploadImageButton = page.getByRole('button', { name: 'Upload Image' });
-        this.insertMediaHeading = page.getByRole('heading', { name: 'Insert Media' });
-        this.uploadFilesButton = page.getByRole('button', { name: 'Upload Files' });
-        this.addFromURLButton = page.getByRole('button', { name: 'Add from URL' });
-        this.urlInput = page.getByRole('textbox', { name: 'https://' });
-        this.addMediaButton = page.getByRole('button', { name: 'Add media' });
-        this.selectImageButton = page.getByRole('button', { name: 'Select' });
         this.regularPriceInput = page.getByRole('spinbutton', { name: 'Regular Price' });
         this.salePriceInput = page.getByRole('spinbutton', { name: 'Sale Price' });
         this.shippingSelect = page.locator('.css-hvcrzd').first();
@@ -120,38 +111,11 @@ export class VendorProductPage {
     }
 
     /**
-     * Upload product image from URL
+     * Upload product image from URL via the shared MediaManager
      */
     async uploadProductImageFromURL(imageUrl: string) {
-        // Click Upload Image button
         await this.uploadImageButton.click();
-        await this.page.waitForLoadState('domcontentloaded');
-
-        // Click Upload Files button
-        await this.uploadFilesButton.click();
-        await this.page.waitForLoadState('domcontentloaded');
-
-        // Click Add from URL
-        await this.addFromURLButton.click();
-        await this.page.waitForLoadState('domcontentloaded');
-
-        // Fill URL
-        await this.urlInput.fill(imageUrl);
-
-        // Click Add media button
-        await this.addMediaButton.click();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
-
-        // Wait for Insert Media heading
-        await expect(this.insertMediaHeading).toBeVisible({ timeout: 10000 });
-
-        // Select the image
-        await this.selectImageButton.click();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
+        await this.mediaManager.uploadFromURL(imageUrl);
     }
 
     /**

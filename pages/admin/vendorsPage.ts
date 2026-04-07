@@ -14,6 +14,9 @@ export class VendorManagementPage {
   readonly storeNameInput: Locator;
   readonly countryCombobox: Locator;
   readonly addressInput: Locator;
+  readonly stateCombobox: Locator;
+  readonly cityInput: Locator;
+  readonly zipCodeInput: Locator;
   readonly emailInput: Locator;
   readonly phoneNumberInput: Locator;
   readonly passwordInput: Locator;
@@ -33,6 +36,9 @@ export class VendorManagementPage {
     this.storeNameInput = page.getByRole('textbox', { name: 'Store Name *' });
     this.countryCombobox = page.getByRole('combobox', { name: 'Country *' });
     this.addressInput = page.getByRole('textbox', { name: 'Address *' });
+    this.stateCombobox = page.getByRole('combobox', { name: 'State *' });
+    this.cityInput = page.getByRole('textbox', { name: 'City *' });
+    this.zipCodeInput = page.getByRole('textbox', { name: 'ZIP Code *' });
     this.emailInput = page.getByRole('textbox', { name: 'Email *' });
     this.phoneNumberInput = page.getByRole('textbox', { name: 'Phone Number' });
     this.passwordInput = page.getByRole('textbox', { name: 'Password *' });
@@ -76,16 +82,47 @@ export class VendorManagementPage {
   }
 
   /**
-   * Fill vendor address information
+   * Fill vendor address via Google Places autocomplete.
+   * Uses keyboard navigation (ArrowDown + Enter) to select the first suggestion,
+   * which avoids the race condition of clicking an asynchronous overlay element.
+   * Falls back gracefully if no suggestion appears.
    */
   async fillAddress(address: string) {
     await this.addressInput.click();
     await this.addressInput.fill(address);
-    await this.page.waitForLoadState('domcontentloaded');
 
-    // Handle address autocomplete - click on the suggestion
-    // await this.page.getByText(address).click();
-    await this.page.getByText('abc kitchenEast 18th Street,').click();
+    // Wait for Google Places autocomplete dropdown to appear
+    const firstSuggestion = this.page.locator('.pac-item').first();
+    const hasSuggestion = await firstSuggestion.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (hasSuggestion) {
+      await this.addressInput.press('ArrowDown');
+      await this.addressInput.press('Enter');
+      // Allow time for State / City / ZIP to auto-populate
+      await this.page.waitForTimeout(1500);
+    }
+  }
+
+  /**
+   * Fill State, City, and ZIP Code manually.
+   * Call this after fillAddress() if autocomplete did not auto-populate the fields.
+   */
+  async fillAddressDetails(state: string, city: string, zipCode: string) {
+    const stateEmpty = (await this.stateCombobox.inputValue().catch(() => '')).trim() === '';
+    if (stateEmpty) {
+      await this.stateCombobox.click();
+      await this.page.getByRole('option', { name: new RegExp(state, 'i') }).first().click();
+    }
+
+    const cityEmpty = (await this.cityInput.inputValue()).trim() === '';
+    if (cityEmpty) {
+      await this.cityInput.fill(city);
+    }
+
+    const zipEmpty = (await this.zipCodeInput.inputValue()).trim() === '';
+    if (zipEmpty) {
+      await this.zipCodeInput.fill(zipCode);
+    }
   }
 
   /**
@@ -128,7 +165,9 @@ export class VendorManagementPage {
     storeName: string;
     country: string;
     address: string;
-    // addressSuggestion?: string;
+    state: string;
+    city: string;
+    zipCode: string;
     email: string;
     phone: string;
     password: string;
@@ -140,15 +179,14 @@ export class VendorManagementPage {
     await this.fillVendorBasicInfo(vendorData.firstName, vendorData.lastName, vendorData.storeName);
     await this.selectCountry(vendorData.country);
     await this.fillAddress(vendorData.address);
-    //need to wait for auto fill zip and city
-    await this.page.waitForTimeout(2000);
+    // Fill State/City/ZIP manually if autocomplete did not populate them
+    await this.fillAddressDetails(vendorData.state, vendorData.city, vendorData.zipCode);
 
     await this.fillContactInfo(vendorData.email, vendorData.phone);
     await this.fillPassword(vendorData.password);
     await this.selectSubscriptionPlan(vendorData.subscriptionPlan);
     await this.submitVendorCreation();
 
-    //want to wait for creation to complete
     await this.page.waitForTimeout(2000);
   }
 
@@ -156,12 +194,6 @@ export class VendorManagementPage {
      * Verify vendor creation success via notification
      */
   async verifyVendorCreatedSuccessfully() {
-    const notificationMessage = this.page
-      .getByLabel('Notifications alt+T')
-      .getByRole('listitem');
-
-    await expect(notificationMessage).toContainText('Vendor created successfully', {
-      timeout: 10000
-    });
+    await expect(this.page.getByText('Vendor created successfully')).toBeVisible({ timeout: 10000 });
   }
 }

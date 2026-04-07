@@ -9,10 +9,13 @@ test.describe('Admin - Vendor Management', () => {
             lastName: 'Vendor',
             storeName: 'Test_Vendor',
             country: 'United States',
-            address: 'abc',
-            email: 'testvendorone@wedevs.com',
+            address: '1600 Amphitheatre Parkway',
+            state: 'California',
+            city: 'Mountain View',
+            zipCode: '94043',
+            email: 'sakifur.rahman.swe@gmail.com',
             phone: '01630741571',
-            password: 'testvendorone@wedevs.com',
+            password: 'sakifur.rahman.swe@gmail.com',
             subscriptionPlan: 'Free Plan'
         };
 
