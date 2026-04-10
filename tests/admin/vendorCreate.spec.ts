@@ -1,26 +1,31 @@
 import { test } from '../fixtures/auth.fixtures';
 import { VendorManagementPage } from '../../pages/admin/vendorsPage';
+import { generateVendorData } from '../../utils/fakerData';
 
 test.describe('Admin - Vendor Management', () => {
 
     test('Create Vendor User', async ({ adminPage }) => {
+        test.setTimeout(60000);
+        // storeName and email are unique per run to avoid marketplace conflicts
+        const { firstName, lastName, storeName, email, phone, password } = generateVendorData();
+
         const vendorData = {
-            firstName: 'Test',
-            lastName: 'Vendor',
-            storeName: 'Test_Vendor',
-            country: 'United States',
-            address: '1600 Amphitheatre Parkway',
-            state: 'California',
-            city: 'Mountain View',
-            zipCode: '94043',
-            email: 'sakifur.rahman.swe@gmail.com',
-            phone: '01630741571',
-            password: 'sakifur.rahman.swe@gmail.com',
-            subscriptionPlan: 'Free Plan'
+            firstName,
+            lastName,
+            storeName,
+            country: 'Bangladesh',
+            address: 'wedevs academy',
+            division: 'Dhaka',  // fallback if Google Places autocomplete is slow
+            city: 'Dhaka',
+            email,
+            phone,
+            password,
+            subscriptionPlan: 'Free Plan',
         };
 
         // Initialize VendorManagementPage
         const vendorPage = new VendorManagementPage(adminPage.page);
+
         // Create vendor
         await vendorPage.createVendor(vendorData);
 
