@@ -131,7 +131,8 @@ My Dokan Automation/
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation and onboarding flow
 │   │                                   #   (handles address autocomplete, optional chat close)
 │   ├── common/                         # Shared/common helpers
-│   │   └── chatManager.ts              # Handles optional chat widgets across pages
+│   │   ├── chatManager.ts              # Handles optional chat widgets across pages
+│   │   └── mediaManager.ts             # Handles WordPress media library upload flow (reusable)
 │   └── customer/                       # Customer role page objects (placeholder)
 │
 ├── tests/                              # Test specifications organized by role/area
@@ -906,15 +907,16 @@ When working on this project, refer to:
 - [Page Object Model Pattern](https://playwright.dev/docs/pom) - POM in Playwright
 
 ### Code Patterns to Study
-- **Image upload**: `productBrandPage.ts` → `uploadBrandImageFromURL()`
-- **Address autocomplete**: `marketplaceOnboardingPage.ts` → `fillAddress()`
+- **Image upload (reusable)**: `pages/common/mediaManager.ts` → `uploadFromURL()` — composition pattern
+- **Image upload (page-level)**: `productBrandPage.ts` → `uploadBrandImageFromURL()` — triggers MediaManager
+- **Address autocomplete**: `marketplaceOnboardingPage.ts` → `fillAddress()`, `vendorsPage.ts` → `fillAddress()`
 - **Optional elements**: `marketplaceOnboardingPage.ts` → `closeChat()`
 - **Delete flow**: `productCategoryPage.ts` → `deleteCategoryByName()`
 - **Multi-step flow**: `setupGuidePage.ts` → `completeSetupGuide()`
 
 ---
 
-**Last Updated:** January 2025  
+**Last Updated:** April 2025  
 **Framework Version:** Playwright 1.56.1  
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 
@@ -1068,5 +1070,34 @@ When working on this codebase:
 - **Setup guide**: 180s (multiple image uploads and settings)
 - **Image upload waits**: 10s timeout for "Insert Media" heading visibility
 - **Pattern**: Use `test.setTimeout(180000)` at test level, not globally
+
+### 10. MediaManager — Reusable Media Library Module (April 2025)
+**Extracted duplicated WordPress media upload logic into `pages/common/mediaManager.ts`:**
+- **Pattern**: Same composition approach as `ChatManager` — inject `Page`, expose one method
+- **Method**: `uploadFromURL(imageUrl: string)` — handles the full dialog flow:
+  - Waits for "Insert Media" heading (confirms dialog opened)
+  - Clicks "Upload Files" → "Add from URL"
+  - Fills URL input and clicks "Add media"
+  - Waits for "Attachment Details" heading (confirms upload success)
+  - Clicks "Select" to insert the image
+- **Usage in page objects** (two-step pattern):
+  ```typescript
+  // 1. Page object clicks its own trigger button
+  await this.uploadImageButton.click();
+  // 2. MediaManager handles everything inside the media library dialog
+  await this.mediaManager.uploadFromURL(imageUrl);
+  ```
+- **Applied to**: `productBrandPage.ts`, `productCollectionPage.ts`, `productCreatePage.ts`, `setupGuidePage.ts`
+- **Removed** from each: 5–8 duplicate locator declarations + 25–35 line upload methods
+- `setupGuidePage.ts` uses `buttonIndex` parameter to select which "Upload Image" button to click (0 = logo, 1 = favicon), then delegates to `MediaManager`
+
+### 11. Vendor Address Fix (April 2025)
+**Fixed `fillAddress()` in `vendorsPage.ts` — hardcoded autocomplete text → keyboard navigation:**
+- **Problem**: `getByText('abc kitchenEast 18th Street,')` was copied from codegen; the Google Places `.pac-item` overlay appeared and disappeared before click could land
+- **Fix**: Wait for `.pac-item` with 3s timeout, then press `ArrowDown + Enter` to select the first suggestion — avoids the race condition entirely
+- **Added** `fillAddressDetails(state, city, zip)` — fills State/City/ZIP only if fields are empty after autocomplete (safe fallback)
+- **Updated** `createVendor()` to accept and use `state`, `city`, `zipCode` fields
+- **Simplified** `verifyVendorCreatedSuccessfully()` from nested locator chain to `getByText('Vendor created successfully').toBeVisible()`
+- **Updated** `vendorCreate.spec.ts`: address changed from `'abc'` to a real geocodable address; `state`, `city`, `zipCode` added to test data
 
 ---

@@ -44,7 +44,8 @@ pages/
 │   └── productCreatePage.ts            ✅ Done
 ├── customer/                           ⬜ Empty — Phase 2
 └── common/
-    └── chatManager.ts                  ✅ Done
+    ├── chatManager.ts                  ✅ Done
+    └── mediaManager.ts                 ✅ Done
 
 tests/
 ├── app_store/
@@ -259,8 +260,12 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `AUTOMATION_PLAN.md` created |
 | Apr 2025 | `setupGuidePage.ts` locators fixed after rebranding — `businessDetailsLink`, `brandLink` changed to `getByRole('tab')`, `saveButton` updated to `Save Changes` |
 | Apr 2025 | `setupGuide.spec.ts` working ✅ |
+| Apr 2025 | `pages/common/mediaManager.ts` created — reusable WordPress media library upload module |
+| Apr 2025 | `productBrandPage`, `productCollectionPage`, `productCreatePage`, `setupGuidePage` — refactored to use `MediaManager` (removed duplicate media locators and methods) |
+| Apr 2025 | `vendorsPage.ts` — `fillAddress()` fixed (ArrowDown+Enter), `fillAddressDetails()` added, `verifyVendorCreatedSuccessfully()` simplified |
+| Apr 2025 | `vendorCreate.spec.ts` — address updated to real geocodable address, `state`/`city`/`zipCode` added |
 
 ---
 
-**Last Updated:** April 2025  
+**Last Updated:** April 2025 (Session 2)  
 **Current Phase:** Phase 1 (Stabilize) — moving to Phase 2 (Customer Flow)
