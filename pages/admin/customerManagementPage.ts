@@ -135,12 +135,13 @@ export class CustomerManagementPage {
     }
 
     /**
-     * Search customer by name
+     * Search customer by email
      */
     async searchCustomer(searchTerm: string) {
         await this.searchCustomersInput.click();
         await this.searchCustomersInput.fill(searchTerm);
         await this.searchCustomersInput.press('Enter');
+        await this.page.waitForLoadState('domcontentloaded');
         await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
         await this.page.waitForTimeout(1000);
@@ -241,6 +242,9 @@ export class CustomerManagementPage {
     async deactivateCustomer() {
         // await this.actionButton.click();
         await this.testCustomerCell.click();
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForLoadState('networkidle');
+        // await this.page.waitForTimeout(1000);
         await this.deactiveButton.click();
         await expect(this.customerUpdatedMessage).toBeVisible({ timeout: 10000 });
         await expect(this.customerInactiveCell).toBeVisible({ timeout: 10000 });
@@ -267,9 +271,8 @@ export class CustomerManagementPage {
             phone: customerData.phone,
         });
 
-        // Search and view customer
-        const searchTerm = customerData.lastName;
-        await this.searchCustomer(searchTerm);
+        // Search and view customer by email (unique identifier)
+        await this.searchCustomer(customerData.email);
         await this.verifyCustomerInList(`${customerData.firstName} ${customerData.lastName}`);
         await this.viewCustomer();
 
@@ -283,9 +286,9 @@ export class CustomerManagementPage {
         // Reset password
         await this.resetPassword(customerData.password);
 
-        // Mark as test
+        // Mark as test — search by updatedEmail since email was changed in the edit step
         await this.navigateToCustomers();
-        await this.searchCustomer(searchTerm);
+        await this.searchCustomer(customerData.updatedEmail);
         await this.markAsTest();
 
         // Deactivate customer
