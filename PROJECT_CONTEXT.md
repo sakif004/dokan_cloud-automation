@@ -118,6 +118,7 @@ My Dokan Automation/
 │   │   ├── productCategoryPage.ts      # Category management (create, delete)
 │   │   ├── productBrandPage.ts         # Brand management (create, delete, image upload)
 │   │   ├── productCollectionPage.ts    # Collection management (create, delete, image upload)
+│   │   ├── productAttributePage.ts     # Attribute management — full CRUD (create, search, edit, delete)
 │   │   ├── productManagementPage.ts    # Product CRUD operations (search, delete)
 │   │   ├── customerManagementPage.ts   # Customer management (create, view)
 │   │   ├── vendorsPage.ts              # Vendor management (create, view)
@@ -138,9 +139,12 @@ My Dokan Automation/
 ├── tests/                              # Test specifications organized by role/area
 │   ├── admin/                          # Admin test suites (main site)
 │   │   ├── adminLogin.spec.ts          # Admin login verification
-│   │   ├── categoryCreate.spec.ts      # Create category
-│   │   ├── brandCreate.spec.ts         # Create brand with image
-│   │   ├── collectionCreate.spec.ts    # Create collection with image
+│   │   ├── seedData.spec.ts            # Creates fixed seed entities (Brand/Category/Collection/Attribute)
+│   │   │                               #   used as stable fixtures by product creation tests
+│   │   ├── categoryCreate.spec.ts      # Create category (random faker data)
+│   │   ├── brandCreate.spec.ts         # Create brand with image (random faker data)
+│   │   ├── collectionCreate.spec.ts    # Create collection with image (random faker data)
+│   │   ├── productAttribute.spec.ts    # Attribute CRUD — Create/Search/Edit/Delete (serial, faker)
 │   │   ├── vendorCreate.spec.ts        # Create vendor account
 │   │   ├── customerManagement.spec.ts  # Customer creation and management
 │   │   ├── deleteCategory.spec.ts      # Delete category by name
@@ -165,8 +169,10 @@ My Dokan Automation/
 ├── utils/                              # Utility files
 │   ├── testData.ts                     # Environment variables & test data loader
 │   │                                   #   (exports Urls object with all credentials/URLs)
+│   │                                   #   (exports SeedData — fixed entity names for product tests)
 │   └── fakerData.ts                    # Random test data generators using @faker-js/faker
-│                                       #   (randomEmail, randomStoreName, generateVendorData, etc.)
+│                                       #   (randomEmail, randomStoreName, randomAttributeName,
+│                                       #    generateVendorData, generateCustomerData, etc.)
 │
 ├── playwright/                         # Playwright artifacts
 │   └── .auth/                          # Stored authentication states (gitignored)
@@ -454,12 +460,14 @@ The configuration defines several test projects for different test execution sta
 - **Creates**: New marketplace on Dokan Cloud platform
 
 #### **3. adminPreSetup** Project
-- **Purpose**: Creates prerequisite data (categories, brands, collections, vendors) and completes setup guide
-- **Runs**:
+- **Purpose**: Creates prerequisite data (seed fixtures, categories, brands, collections, attributes, vendors) and completes setup guide
+- **Runs (in order)**:
+  - `tests/admin/seedData.spec.ts` ← **first** — creates stable fixtures for product tests
   - `tests/admin/vendorCreate.spec.ts`
   - `tests/admin/categoryCreate.spec.ts`
   - `tests/admin/brandCreate.spec.ts`
   - `tests/admin/collectionCreate.spec.ts`
+  - `tests/admin/productAttribute.spec.ts`
   - `tests/admin/setupGuide.spec.ts` (should run after marketplaceOnboarding)
   - `tests/admin/customerManagement.spec.ts`
 - **Uses**: Admin authentication (`adminPage` fixture)
@@ -918,10 +926,13 @@ When working on this project, refer to:
 - **Multi-step flow**: `setupGuidePage.ts` → `completeSetupGuide()`
 - **Unique test data**: `utils/fakerData.ts` → `generateVendorData()`, `generateCustomerData()`
 - **Sequential tests with shared state**: `customerManagement.spec.ts` → `test.describe.serial` + `const shared`
+- **Attribute CRUD pattern**: `productAttributePage.ts` → `createAttribute()`, `editAttribute()`, `deleteAttribute()`
+- **Seed vs CRUD separation**: `seedData.spec.ts` (fixed names, never deleted) vs `productAttribute.spec.ts` (faker names, full CRUD + delete)
+- **Fixed test fixtures**: `utils/testData.ts` → `SeedData` — import in product creation tests
 
 ---
 
-**Last Updated:** April 2025 (Session 3)  
+**Last Updated:** April 2025 (Session 4)  
 **Framework Version:** Playwright 1.56.1  
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 
@@ -1139,5 +1150,51 @@ When working on this codebase:
 - **`deactivateCustomer()`**: same fix — uses `tableActionButton` with clean 300ms wait
 - **`searchCustomer()`**: comment updated to "Search customer by email"
 - **`completeCustomerWorkflow()`**: searches by `email` (not `lastName`); re-navigates + re-searches before `deactivateCustomer()` to avoid stale dropdown state
+
+### 14. Attribute CRUD + Seed Data Setup (April 2025)
+**New page object and two-tier data strategy for product creation prerequisites:**
+
+#### `pages/admin/productAttributePage.ts` (New)
+- **Full CRUD page object** for marketplace product attributes
+- **Locators**: navigation (`productsMenu`, `attributesLink`), form (`nameInput`, `typeDropdownTrigger`, `optionsInput`, `defaultOptionsDropdown`), table (`tableActionButton`), action buttons (`editButton`, `deleteButton`), messages
+- **`typeDropdownTrigger`**: `locator('div').filter({ hasText: 'Text' }).nth(5)` — React Select trigger (same codegen pattern as country dropdowns)
+- **`tableActionButton`**: same scoped pattern as `customerManagementPage.ts` (`getByRole('table').getByRole('button').filter({ hasText: /^$/ }).first()`)
+- **Key methods**: `createAttribute({ name, type, options })`, `editAttribute({ name, newOptions?, defaultOption? })`, `deleteAttribute()`, `searchAttribute()`, `verifyAttributeInList()`
+- **`addOptions(options[])`**: loops through array calling `addOption()` (fill + Enter) for each
+
+#### `tests/admin/productAttribute.spec.ts` (New)
+- **4 serial CRUD tests** using `test.describe.serial` + `const shared` object
+- **faker-based names**: `randomAttributeName()` from `fakerData.ts` (`faker.commerce.productMaterial()`)
+- Test order: Create → Search & Verify → Edit (rename to uppercase + add XL + set default M) → Delete
+- `shared.updatedName` = `shared.attributeName.toUpperCase()` — passed between tests
+
+#### `utils/fakerData.ts` — New export
+- Added `randomAttributeName()`: returns `faker.commerce.productMaterial()` (e.g. "Cotton", "Steel")
+
+#### `utils/testData.ts` — `SeedData` constant (New export)
+- **Purpose**: Fixed entity names that product creation tests always reference — never deleted by tests
+- **Entities**:
+  - `SeedData.brand` → `{ name: 'Automation Brand', description, imageUrl }`
+  - `SeedData.category` → `{ name: 'Automation Category', description }`
+  - `SeedData.collection` → `{ name: 'Automation Collection', description, imageUrl }`
+  - `SeedData.attribute` → `{ name: 'Automation Size', type: 'Multiselect', options: ['S','M','L','XL'] }`
+- **Usage in product tests**: `import { SeedData } from '../../utils/testData';`
+
+#### `tests/admin/seedData.spec.ts` (New)
+- **4 serial tests** — one per seed entity (Brand, Category, Collection, Attribute)
+- Reuses existing page objects (`BrandManagementPage`, `CategoryManagementPage`, `CollectionManagementPage`, `AttributeManagementPage`) + `SeedData` constants
+- Runs **first** in `adminPreSetup` project — all subsequent tests that need these entities will find them ready
+
+#### Two-Tier Data Strategy
+| | CRUD Tests | Seed Data |
+|---|---|---|
+| Files | `productAttribute.spec.ts`, `brandCreate.spec.ts`, etc. | `seedData.spec.ts` |
+| Data names | Random (faker) | Fixed (`SeedData.*`) |
+| Lifecycle | Create → test → **delete** | Create once, **never deleted** |
+| Purpose | Test the feature | Provide stable fixtures |
+
+#### `playwright.config.ts` — `adminPreSetup` update
+- `seedData.spec.ts` added as the **first** entry in `testMatch`
+- `productAttribute.spec.ts` added after `collectionCreate.spec.ts`
 
 ---

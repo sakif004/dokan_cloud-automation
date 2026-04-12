@@ -67,6 +67,9 @@ export default defineConfig({
     {
       name: "adminPreSetup",
       testMatch: [
+        // Seed data runs first — creates fixed Brand, Category, Collection, Attribute
+        // that product creation tests always depend on
+        'tests/admin/seedData.spec.ts',
         'tests/admin/vendorCreate.spec.ts',
         'tests/admin/categoryCreate.spec.ts',
         'tests/admin/brandCreate.spec.ts',

@@ -36,6 +36,7 @@ pages/
 │   ├── productCategoryPage.ts          ✅ Done
 │   ├── productBrandPage.ts             ✅ Done
 │   ├── productCollectionPage.ts        ✅ Done
+│   ├── productAttributePage.ts         ✅ Done
 │   ├── productManagementPage.ts        ✅ Done
 │   ├── vendorsPage.ts                  ✅ Done
 │   └── customerManagementPage.ts       ✅ Done
@@ -48,17 +49,19 @@ pages/
     └── mediaManager.ts                 ✅ Done
 
 utils/
-├── testData.ts                         ✅ Done
-└── fakerData.ts                        ✅ Done
+├── testData.ts                         ✅ Done  (+ SeedData export — fixed entity constants)
+└── fakerData.ts                        ✅ Done  (+ randomAttributeName())
 
 tests/
 ├── app_store/
 │   └── marketplaceOnboarding.spec.ts   ✅ Done
 ├── admin/
 │   ├── adminLogin.spec.ts              ✅ Done
+│   ├── seedData.spec.ts                ✅ Done  (fixed Brand/Category/Collection/Attribute — never deleted)
 │   ├── categoryCreate.spec.ts          ✅ Done
 │   ├── brandCreate.spec.ts             ✅ Done
 │   ├── collectionCreate.spec.ts        ✅ Done
+│   ├── productAttribute.spec.ts        ✅ Done  (CRUD: Create/Search/Edit/Delete — serial + faker)
 │   ├── vendorCreate.spec.ts            ✅ Done
 │   ├── customerManagement.spec.ts      ✅ Done
 │   ├── setupGuide.spec.ts              ✅ Done
@@ -97,7 +100,7 @@ tests/
 |---------|------|-------------|--------|
 | `setup` | `auth.setup.ts` | — | ✅ Working |
 | `marketplaceSetup` | `tests/app_store/marketplaceOnboarding.spec.ts` | `setup` (commented out) | ✅ Working |
-| `adminPreSetup` | vendor/category/brand/collection/setupGuide/customer | `setup` (commented out) | ✅ Working |
+| `adminPreSetup` | seedData/vendor/category/brand/collection/attribute/setupGuide/customer | `setup` (commented out) | ✅ Working |
 | `vendorProductCreation` | `productCreate.spec.ts` + e2e delete | `setup` (commented out) | ✅ Working |
 | `cleanup` | (empty) | — | ⬜ Not implemented |
 
@@ -271,8 +274,14 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `utils/fakerData.ts` created — modular faker utility (`randomEmail`, `generateVendorData`, `generateCustomerData`, etc.) |
 | Apr 2025 | `customerManagement.spec.ts` — faker added, `test.describe.serial`, `shared` state object, search by email, `test.setTimeout(90000)` |
 | Apr 2025 | `customerManagementPage.ts` — `tableActionButton` locator added, `viewCustomer`/`markAsTest`/`deactivateCustomer` fixed to use it, re-navigate before deactivate in workflow |
+| Apr 2025 | `pages/admin/productAttributePage.ts` created — full CRUD POM (createAttribute, editAttribute, deleteAttribute, searchAttribute, verifyAttributeInList) |
+| Apr 2025 | `tests/admin/productAttribute.spec.ts` created — 4 serial CRUD tests with faker names (`randomAttributeName`) + shared state |
+| Apr 2025 | `utils/fakerData.ts` — added `randomAttributeName()` (`faker.commerce.productMaterial()`) |
+| Apr 2025 | `utils/testData.ts` — added `SeedData` export (fixed Brand/Category/Collection/Attribute constants for product tests) |
+| Apr 2025 | `tests/admin/seedData.spec.ts` created — 4 serial tests that create permanent seed fixtures; reuses existing page objects + SeedData constants |
+| Apr 2025 | `playwright.config.ts` — `seedData.spec.ts` added first in `adminPreSetup`, `productAttribute.spec.ts` added after `collectionCreate.spec.ts` |
 
 ---
 
-**Last Updated:** April 2025 (Session 3)  
+**Last Updated:** April 2025 (Session 4)  
 **Current Phase:** Phase 1 (Stabilize) — moving to Phase 2 (Customer Flow)

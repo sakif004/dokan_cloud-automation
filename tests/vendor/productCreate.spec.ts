@@ -1,3 +1,12 @@
+// import { SeedData } from '../../utils/testData';
+
+// // in your product create test:
+// await productPage.selectBrand(SeedData.brand.name);
+// await productPage.selectCategory(SeedData.category.name);
+// await productPage.selectCollection(SeedData.collection.name);
+// await productPage.selectAttribute(SeedData.attribute.name);
+
+
 import { test } from '../fixtures/auth.fixtures';
 import { VendorProductPage } from '../../pages/vendor/productCreatePage';
 test.describe('Vendor - Product Management', () => {

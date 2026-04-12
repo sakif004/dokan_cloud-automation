@@ -36,6 +36,33 @@ let Urls: {
 };
 
 
+/**
+ * SeedData — Fixed entities created once by seedData.spec.ts.
+ * These are stable fixtures that product creation tests always depend on.
+ * Never delete these from the marketplace during normal test runs.
+ */
+export const SeedData = {
+    brand: {
+        name: 'Automation Brand',
+        description: 'Fixed brand for product creation tests',
+        imageUrl: 'https://www.thethrive.in/wp-content/uploads/2022/03/All-You-Need-To-Know-About-Brand-Image.jpg',
+    },
+    category: {
+        name: 'Automation Category',
+        description: 'Fixed category for product creation tests',
+    },
+    collection: {
+        name: 'Automation Collection',
+        description: 'Fixed collection for product creation tests',
+        imageUrl: 'https://img.freepik.com/free-vector/new-collection-lettering-with-gradient-leaves-creative-inscription-leaves-center_1262-13804.jpg',
+    },
+    attribute: {
+        name: 'Automation Size',
+        type: 'Multiselect',
+        options: ['S', 'M', 'L', 'XL'],
+    },
+};
+
 /**----------------------------*/
 export {
     Urls,
