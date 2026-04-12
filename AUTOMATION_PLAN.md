@@ -47,6 +47,10 @@ pages/
     ├── chatManager.ts                  ✅ Done
     └── mediaManager.ts                 ✅ Done
 
+utils/
+├── testData.ts                         ✅ Done
+└── fakerData.ts                        ✅ Done
+
 tests/
 ├── app_store/
 │   └── marketplaceOnboarding.spec.ts   ✅ Done
@@ -262,10 +266,13 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `setupGuide.spec.ts` working ✅ |
 | Apr 2025 | `pages/common/mediaManager.ts` created — reusable WordPress media library upload module |
 | Apr 2025 | `productBrandPage`, `productCollectionPage`, `productCreatePage`, `setupGuidePage` — refactored to use `MediaManager` (removed duplicate media locators and methods) |
-| Apr 2025 | `vendorsPage.ts` — `fillAddress()` fixed (ArrowDown+Enter), `fillAddressDetails()` added, `verifyVendorCreatedSuccessfully()` simplified |
-| Apr 2025 | `vendorCreate.spec.ts` — address updated to real geocodable address, `state`/`city`/`zipCode` added |
+| Apr 2025 | `vendorsPage.ts` — `fillAddress()` fixed (marketplace pattern), `fillAddressDetails()` fixed (React Select check via `getByText`), phone locator fixed |
+| Apr 2025 | `vendorCreate.spec.ts` — uses `generateVendorData()` from fakerData, Bangladesh address, `division`/`city` fallback |
+| Apr 2025 | `utils/fakerData.ts` created — modular faker utility (`randomEmail`, `generateVendorData`, `generateCustomerData`, etc.) |
+| Apr 2025 | `customerManagement.spec.ts` — faker added, `test.describe.serial`, `shared` state object, search by email, `test.setTimeout(90000)` |
+| Apr 2025 | `customerManagementPage.ts` — `tableActionButton` locator added, `viewCustomer`/`markAsTest`/`deactivateCustomer` fixed to use it, re-navigate before deactivate in workflow |
 
 ---
 
-**Last Updated:** April 2025 (Session 2)  
+**Last Updated:** April 2025 (Session 3)  
 **Current Phase:** Phase 1 (Stabilize) — moving to Phase 2 (Customer Flow)

@@ -39,6 +39,7 @@ export class CustomerManagementPage {
 
     // Customer Actions Locators
     readonly actionButton: Locator;
+    readonly tableActionButton: Locator;
     readonly deactiveButton: Locator;
     readonly customerInactiveCell: Locator;
     readonly updateSuccessfullyMessage: Locator;
@@ -82,6 +83,8 @@ export class CustomerManagementPage {
 
         // Customer Actions
         this.actionButton = page.locator("(//table//tr//td//div//button)[1]");
+        // Scoped to the table — finds the icon-only action button in the first result row
+        this.tableActionButton = page.getByRole('table').getByRole('button').filter({ hasText: /^$/ }).first();
         this.deactiveButton = page.getByRole('button', { name: 'Deactive' });
         this.customerInactiveCell = page.getByRole('cell', { name: 'Inactive' });
         this.updateSuccessfullyMessage = page.getByText('Updated successfully');
@@ -158,12 +161,9 @@ export class CustomerManagementPage {
      * View customer details
      */
     async viewCustomer() {
-        // await this.page.waitForLoadState('networkidle');
-        // await this.page.waitForLoadState('domcontentloaded');
-        // await this.page.waitForTimeout(1000);
-        // await this.actionButton.click();
-        await this.testCustomerCell.click();
-        // await this.page.locator("(//table//tr//td//div//button)[1]").click();
+        // Click the action button in the table row to reveal the dropdown menu
+        await this.tableActionButton.click();
+        await this.page.waitForTimeout(300);
         await this.page.getByRole('link', { name: 'View Customer' }).click();
     }
 
@@ -228,10 +228,9 @@ export class CustomerManagementPage {
      * Mark customer as test
      */
     async markAsTest() {
-        await this.testCustomerCell.click();
-        await this.page.waitForLoadState('networkidle');
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForTimeout(1000);
+        // Click the action button in the table row to reveal the dropdown menu
+        await this.tableActionButton.click();
+        await this.page.waitForTimeout(300);
         await this.markAsTestButton.click();
         await expect(this.updateSuccessfullyMessage).toBeVisible({ timeout: 10000 });
     }
@@ -240,11 +239,9 @@ export class CustomerManagementPage {
      * Deactivate customer
      */
     async deactivateCustomer() {
-        // await this.actionButton.click();
-        await this.testCustomerCell.click();
-        await this.page.waitForLoadState('domcontentloaded');
-        await this.page.waitForLoadState('networkidle');
-        // await this.page.waitForTimeout(1000);
+        // Click the action button in the table row to reveal the dropdown menu
+        await this.tableActionButton.click();
+        await this.page.waitForTimeout(300);
         await this.deactiveButton.click();
         await expect(this.customerUpdatedMessage).toBeVisible({ timeout: 10000 });
         await expect(this.customerInactiveCell).toBeVisible({ timeout: 10000 });
@@ -291,7 +288,10 @@ export class CustomerManagementPage {
         await this.searchCustomer(customerData.updatedEmail);
         await this.markAsTest();
 
-        // Deactivate customer
+        // Deactivate customer — navigate back and re-search to ensure clean page state
+        // (avoids stale dropdown from the markAsTest action button click)
+        await this.navigateToCustomers();
+        await this.searchCustomer(customerData.updatedEmail);
         await this.deactivateCustomer();
     }
 }

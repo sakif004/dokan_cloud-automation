@@ -163,8 +163,10 @@ My Dokan Automation/
 │   └── auth.setup.ts                   # Authentication setup script (creates session files)
 │
 ├── utils/                              # Utility files
-│   └── testData.ts                     # Environment variables & test data loader
-│                                       #   (exports Urls object with all credentials/URLs)
+│   ├── testData.ts                     # Environment variables & test data loader
+│   │                                   #   (exports Urls object with all credentials/URLs)
+│   └── fakerData.ts                    # Random test data generators using @faker-js/faker
+│                                       #   (randomEmail, randomStoreName, generateVendorData, etc.)
 │
 ├── playwright/                         # Playwright artifacts
 │   └── .auth/                          # Stored authentication states (gitignored)
@@ -909,14 +911,17 @@ When working on this project, refer to:
 ### Code Patterns to Study
 - **Image upload (reusable)**: `pages/common/mediaManager.ts` → `uploadFromURL()` — composition pattern
 - **Image upload (page-level)**: `productBrandPage.ts` → `uploadBrandImageFromURL()` — triggers MediaManager
-- **Address autocomplete**: `marketplaceOnboardingPage.ts` → `fillAddress()`, `vendorsPage.ts` → `fillAddress()`
+- **Address autocomplete**: `marketplaceOnboardingPage.ts` → `fillAddress()` / `verifyAddressFieldsPopulated()`
+- **Address autocomplete (vendor form)**: `vendorsPage.ts` → `fillAddress()` + `fillAddressDetails()`
 - **Optional elements**: `marketplaceOnboardingPage.ts` → `closeChat()`
 - **Delete flow**: `productCategoryPage.ts` → `deleteCategoryByName()`
 - **Multi-step flow**: `setupGuidePage.ts` → `completeSetupGuide()`
+- **Unique test data**: `utils/fakerData.ts` → `generateVendorData()`, `generateCustomerData()`
+- **Sequential tests with shared state**: `customerManagement.spec.ts` → `test.describe.serial` + `const shared`
 
 ---
 
-**Last Updated:** April 2025  
+**Last Updated:** April 2025 (Session 3)  
 **Framework Version:** Playwright 1.56.1  
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 
@@ -1071,7 +1076,19 @@ When working on this codebase:
 - **Image upload waits**: 10s timeout for "Insert Media" heading visibility
 - **Pattern**: Use `test.setTimeout(180000)` at test level, not globally
 
-### 10. MediaManager — Reusable Media Library Module (April 2025)
+### 10. FakerData — Reusable Random Data Generators (April 2025)
+**Created `utils/fakerData.ts` — modular faker utility using `@faker-js/faker`:**
+- **Import pattern**: Import only what you need
+  ```typescript
+  import { randomEmail, randomStoreName } from '../../utils/fakerData';
+  import { generateVendorData, generateCustomerData } from '../../utils/fakerData';
+  ```
+- **Primitives**: `randomEmail()`, `randomPassword()`, `randomFirstName()`, `randomLastName()`, `randomPhone()`, `randomStoreName()`, `randomProductName()`, `randomDescription()`, `randomPrice()`
+- **Composite generators**: `generateVendorData()`, `generateCustomerData()`, `generateProductData()`
+- **Purpose**: Prevents duplicate-entity errors on re-runs (email and store name must be unique per marketplace)
+- **Applied to**: `vendorCreate.spec.ts`, `customerManagement.spec.ts`
+
+### 11. MediaManager — Reusable Media Library Module (April 2025)
 **Extracted duplicated WordPress media upload logic into `pages/common/mediaManager.ts`:**
 - **Pattern**: Same composition approach as `ChatManager` — inject `Page`, expose one method
 - **Method**: `uploadFromURL(imageUrl: string)` — handles the full dialog flow:
@@ -1091,13 +1108,36 @@ When working on this codebase:
 - **Removed** from each: 5–8 duplicate locator declarations + 25–35 line upload methods
 - `setupGuidePage.ts` uses `buttonIndex` parameter to select which "Upload Image" button to click (0 = logo, 1 = favicon), then delegates to `MediaManager`
 
-### 11. Vendor Address Fix (April 2025)
-**Fixed `fillAddress()` in `vendorsPage.ts` — hardcoded autocomplete text → keyboard navigation:**
-- **Problem**: `getByText('abc kitchenEast 18th Street,')` was copied from codegen; the Google Places `.pac-item` overlay appeared and disappeared before click could land
-- **Fix**: Wait for `.pac-item` with 3s timeout, then press `ArrowDown + Enter` to select the first suggestion — avoids the race condition entirely
-- **Added** `fillAddressDetails(state, city, zip)` — fills State/City/ZIP only if fields are empty after autocomplete (safe fallback)
-- **Updated** `createVendor()` to accept and use `state`, `city`, `zipCode` fields
-- **Simplified** `verifyVendorCreatedSuccessfully()` from nested locator chain to `getByText('Vendor created successfully').toBeVisible()`
-- **Updated** `vendorCreate.spec.ts`: address changed from `'abc'` to a real geocodable address; `state`, `city`, `zipCode` added to test data
+### 12. Vendor Address Fix (April 2025)
+**Fixed `fillAddress()` and `fillAddressDetails()` in `vendorsPage.ts` — same pattern as `marketplaceOnboardingPage.ts`:**
+- **Problem**: Hardcoded autocomplete text click + wrong empty-check for React Select Division field caused test hangs and timeouts
+- **`fillAddress()` pattern** (matches marketplace):
+  - `fill(address)` → wait 2s → `ArrowDown` → wait 1s → `Enter` → wait 2s
+- **`fillAddressDetails()` pattern**:
+  - Division check: `getByText('Division *Dhaka').isVisible({ timeout: 5000 })` — correct way to detect React Select value (not `inputValue()` which always returns empty)
+  - Fallback: click the img trigger inside the State container div → type → select option
+  - City: plain `inputValue()` check (regular textbox)
+- **Locator fix**: `phoneNumberInput` updated to `'Phone Number *'` (was missing asterisk)
+- **`selectCountry()`**: added `waitForTimeout(300)` after click to ensure React Select opens before typing
+- **`createVendor()`**: `division` and `city` are now required fields (not optional) — always passed to `fillAddressDetails`
+- **Updated** `vendorCreate.spec.ts`: uses `generateVendorData()` from fakerData; Bangladesh address with `division: 'Dhaka'`, `city: 'Dhaka'`; `test.setTimeout(60000)`
+
+### 13. Customer Management Overhaul (April 2025)
+**Major updates to `customerManagement.spec.ts` and `customerManagementPage.ts`:**
+
+#### `customerManagement.spec.ts`
+- **Faker integration**: `Complete customer workflow` uses full `generateCustomerData()`; `Create customer` uses `randomEmail()` + `randomPhone()` with fixed name
+- **`test.describe.serial`** wraps the 6 individual tests — guarantees order and shared state persistence
+- **Shared state object** (`const shared`): set by `Create customer`, read by all subsequent tests — eliminates multiple-match problem from searching by name
+- **Search by email**: all searches use `shared.email` (before edit) or `shared.updatedEmail` (after edit) — email is unique, always returns exactly 1 result
+- **`test.setTimeout(90000)`** on `Complete customer workflow` — 12-step workflow easily exceeds 30s default
+
+#### `customerManagementPage.ts`
+- **`tableActionButton`**: new locator `page.getByRole('table').getByRole('button').filter({ hasText: /^$/ }).first()` — scoped to table, avoids global strict mode violation
+- **`viewCustomer()`**: replaced `testCustomerCell.click()` with `tableActionButton.click()` + dropdown navigation
+- **`markAsTest()`**: same fix — uses `tableActionButton`
+- **`deactivateCustomer()`**: same fix — uses `tableActionButton` with clean 300ms wait
+- **`searchCustomer()`**: comment updated to "Search customer by email"
+- **`completeCustomerWorkflow()`**: searches by `email` (not `lastName`); re-navigates + re-searches before `deactivateCustomer()` to avoid stale dropdown state
 
 ---

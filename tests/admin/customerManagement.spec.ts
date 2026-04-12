@@ -20,6 +20,9 @@ test.describe('Admin - Customer Management', () => {
 
   // ─── Self-contained workflow (independent of shared state) ────────────────
   test('Complete customer workflow - Create, Update, Reset Password, Mark as Test, Deactivate', async ({ adminPage }) => {
+    // Extend timeout — this workflow has 12+ sequential steps with network waits
+    test.setTimeout(90000);
+
     // Initialize page object with authenticated admin page
     const customerPage = new CustomerManagementPage(adminPage.page);
 
