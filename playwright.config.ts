@@ -71,6 +71,7 @@ export default defineConfig({
         'tests/admin/categoryCreate.spec.ts',
         'tests/admin/brandCreate.spec.ts',
         'tests/admin/collectionCreate.spec.ts',
+        'tests/admin/productAttribute.spec.ts',
         // Note: setupGuide.spec.ts should be run after marketplaceOnboarding.spec.ts
         'tests/admin/setupGuide.spec.ts',
         'tests/admin/customerManagement.spec.ts',

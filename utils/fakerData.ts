@@ -34,6 +34,9 @@ export const randomStoreName = (): string =>
 export const randomProductName = (): string =>
     faker.commerce.productName();
 
+export const randomAttributeName = (): string =>
+    faker.commerce.productMaterial();
+
 export const randomDescription = (): string =>
     faker.commerce.productDescription();
 
