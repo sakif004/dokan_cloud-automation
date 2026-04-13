@@ -28,7 +28,7 @@
 ```
 pages/
 ├── app_store/
-│   ├── dokanCloudLoginPage.ts          ✅ Done
+│   ├── flycommerceLoginPage.ts         ✅ Done  (renamed from dokanCloudLoginPage.ts)
 │   └── marketplaceOnboardingPage.ts    ✅ Done
 ├── admin/
 │   ├── adminAuthPage.ts                ✅ Done
@@ -39,25 +39,30 @@ pages/
 │   ├── productAttributePage.ts         ✅ Done
 │   ├── productManagementPage.ts        ✅ Done
 │   ├── vendorsPage.ts                  ✅ Done
-│   └── customerManagementPage.ts       ✅ Done
+│   └── customerManagementPage.ts       ✅ Done  (+ password support in createCustomer)
 ├── vendor/
 │   ├── vendorAuthPage.ts               ✅ Done
 │   └── productCreatePage.ts            ✅ Done
-├── customer/                           ⬜ Empty — Phase 2
+├── customer/                           ✅ Done — Phase 2 complete
+│   ├── customerAuthPage.ts             ✅ Done
+│   ├── storefrontPage.ts               ✅ Done
+│   ├── productDetailPage.ts            ✅ Done
+│   ├── cartPage.ts                     ✅ Done
+│   └── checkoutPage.ts                 ✅ Done
 └── common/
     ├── chatManager.ts                  ✅ Done
     └── mediaManager.ts                 ✅ Done
 
 utils/
-├── testData.ts                         ✅ Done  (+ SeedData export — fixed entity constants)
-└── fakerData.ts                        ✅ Done  (+ randomAttributeName())
+├── testData.ts                         ✅ Done  (+ SeedData.vendor/customer/product; flycommerceUrl)
+└── fakerData.ts                        ✅ Done  (+ randomAttributeName, generateCheckoutData)
 
 tests/
 ├── app_store/
 │   └── marketplaceOnboarding.spec.ts   ✅ Done
 ├── admin/
 │   ├── adminLogin.spec.ts              ✅ Done
-│   ├── seedData.spec.ts                ✅ Done  (fixed Brand/Category/Collection/Attribute — never deleted)
+│   ├── seedData.spec.ts                ✅ Done  (Brand/Category/Collection/Attribute + journey Vendor + Customer)
 │   ├── categoryCreate.spec.ts          ✅ Done
 │   ├── brandCreate.spec.ts             ✅ Done
 │   ├── collectionCreate.spec.ts        ✅ Done
@@ -72,13 +77,18 @@ tests/
 ├── vendor/
 │   ├── vendorLogin.spec.ts             ✅ Done
 │   └── productCreate.spec.ts           ✅ Done
-├── customer/                           ⬜ Empty — Phase 2
+├── customer/                           ✅ Done — Phase 2 complete
+│   ├── customerLogin.spec.ts           ✅ Done
+│   ├── browseProducts.spec.ts          ✅ Done
+│   ├── addToCart.spec.ts               ✅ Done
+│   └── checkout.spec.ts                ✅ Done
 ├── e2e/
 │   ├── e2eCreateMarketplace.spec.ts    ⚠️  Old codegen file (not in use)
 │   └── e2eDeleteProductRelatedThings.spec.ts  ✅ Done
 ├── fixtures/
 │   └── auth.fixtures.ts               ✅ Done
-└── auth.setup.ts                      ✅ Done
+├── auth.setup.ts                      ✅ Done  (Phase 1: Admin + FlyCommerce only)
+└── auth.setupUsers.ts                 ✅ Done  (Phase 3: Vendor + Customer — after adminSeedSetup)
 ```
 
 ---
@@ -89,22 +99,45 @@ tests/
 |---------|------|--------|-------------|--------|
 | `adminPage` | `auth.fixtures.ts` | `*.flycom.shop/admin` | `playwright/.auth/admin.json` | ✅ |
 | `vendorPage` | `auth.fixtures.ts` | `*.flycom.shop/vendor` | `playwright/.auth/vendor.json` | ✅ |
-| `customerPage` | `auth.fixtures.ts` | `*.flycom.shop/` (storefront) | `playwright/.auth/customer.json` | ⚠️ Placeholder |
-| `dokanCloudPage` | `auth.fixtures.ts` | `app.dokan.co` | `playwright/.auth/dokanCloud.json` | ✅ |
+| `customerPage` | `auth.fixtures.ts` | `*.flycom.shop/` (storefront) | `playwright/.auth/customer.json` | ✅ |
+| `flycommercePage` | `auth.fixtures.ts` | `app.flycommerce.com` | `playwright/.auth/flycommerce.json` | ✅ |
+
+**Auth Setup Files:**
+
+| File | Project | Saves |
+|------|---------|-------|
+| `auth.setup.ts` | `setup` | `admin.json` + `flycommerce.json` |
+| `auth.setupUsers.ts` | `setupAuth` | `vendor.json` + `customer.json` |
+
+**Login locators (vendor portal = same React app as admin):**
+- Admin + Vendor: `getByRole('textbox', { name: 'Email Address' })` / `getByRole('textbox', { name: 'Password' })` / `getByRole('button', { name: 'Sign In', exact: true })`
+- Customer storefront: `#reg-email` / `#login-password`
+- FlyCommerce: `getByRole('textbox', { name: 'Enter your email' })` / `getByRole('textbox', { name: 'Write your password' })`
 
 ---
 
 ## ✅ Playwright Config Projects
 
-| Project | Runs | Dependencies | Status |
-|---------|------|-------------|--------|
-| `setup` | `auth.setup.ts` | — | ✅ Working |
-| `marketplaceSetup` | `tests/app_store/marketplaceOnboarding.spec.ts` | `setup` (commented out) | ✅ Working |
-| `adminPreSetup` | seedData/vendor/category/brand/collection/attribute/setupGuide/customer | `setup` (commented out) | ✅ Working |
-| `vendorProductCreation` | `productCreate.spec.ts` + e2e delete | `setup` (commented out) | ✅ Working |
-| `cleanup` | (empty) | — | ⬜ Not implemented |
+**No `dependencies` set** — projects run independently using `.auth` JSON files. Run setup steps once manually, then any project can run freely.
 
-> **Known issue:** `dependencies` are commented out in all projects. Manual order required: run `setup` first.
+**One-time setup order (fresh marketplace):**
+```bash
+npx playwright test --project=setup          # admin.json + flycommerce.json
+npx playwright test --project=adminSeedSetup # seed data + vendor + customer accounts
+npx playwright test --project=setupAuth      # vendor.json + customer.json
+```
+
+| Project | Runs | Notes |
+|---------|------|-------|
+| `setup` | `auth.setup.ts` | Admin + FlyCommerce auth only |
+| `adminSeedSetup` | `seedData.spec.ts` | Creates seed fixtures + journey accounts (run once) |
+| `setupAuth` | `auth.setupUsers.ts` | Vendor + Customer auth (run after adminSeedSetup) |
+| `adminCRUD` | CRUD spec files | Uses `admin.json` — run freely |
+| `vendorJourney` | `vendorLogin` + `productCreate` | Uses `vendor.json` |
+| `customerJourney` | login + browse + cart + checkout | Uses `customer.json` |
+| `adminVerify` | order verification | ⬜ Pending — no tests yet |
+| `cleanup` | delete product + related | Uses `admin.json` |
+| `marketplaceSetup` | `marketplaceOnboarding.spec.ts` | Uses `flycommerce.json` — run manually |
 
 ---
 
@@ -129,7 +162,7 @@ tests/
 
 ---
 
-## 📋 PHASE 2 — Customer / Storefront Flow (Next Priority)
+## 📋 PHASE 2 — Customer / Storefront Flow ✅ COMPLETE
 
 > Goal: Automate the buyer journey on the storefront
 
@@ -137,28 +170,28 @@ tests/
 
 | # | Task | File to Create | Status |
 |---|------|---------------|--------|
-| 2.1 | Create `customerAuthPage.ts` | `pages/customer/customerAuthPage.ts` | ⬜ Pending |
-| 2.2 | Create `storefrontPage.ts` | `pages/customer/storefrontPage.ts` | ⬜ Pending |
-| 2.3 | Create `productDetailPage.ts` | `pages/customer/productDetailPage.ts` | ⬜ Pending |
-| 2.4 | Create `cartPage.ts` | `pages/customer/cartPage.ts` | ⬜ Pending |
-| 2.5 | Create `checkoutPage.ts` | `pages/customer/checkoutPage.ts` | ⬜ Pending |
+| 2.1 | Create `customerAuthPage.ts` | `pages/customer/customerAuthPage.ts` | ✅ Done |
+| 2.2 | Create `storefrontPage.ts` | `pages/customer/storefrontPage.ts` | ✅ Done |
+| 2.3 | Create `productDetailPage.ts` | `pages/customer/productDetailPage.ts` | ✅ Done |
+| 2.4 | Create `cartPage.ts` | `pages/customer/cartPage.ts` | ✅ Done |
+| 2.5 | Create `checkoutPage.ts` | `pages/customer/checkoutPage.ts` | ✅ Done |
 
 ### 2B — Auth Setup
 
 | # | Task | File(s) | Status |
 |---|------|---------|--------|
-| 2.6 | Implement `customerPage` fixture properly | `tests/fixtures/auth.fixtures.ts` | ⬜ Pending |
-| 2.7 | Add `authenticate customer` in auth setup | `tests/auth.setup.ts` | ⬜ Pending |
+| 2.6 | Implement `customerPage` fixture (graceful skip + auth file check) | `tests/fixtures/auth.fixtures.ts` | ✅ Done |
+| 2.7 | Add `authenticate customer` with graceful try/catch | `tests/auth.setup.ts` | ✅ Done |
 
 ### 2C — Test Specs
 
 | # | Task | File to Create | Status |
 |---|------|---------------|--------|
-| 2.8 | Customer login spec | `tests/customer/customerLogin.spec.ts` | ⬜ Pending |
-| 2.9 | Browse products spec | `tests/customer/browseProducts.spec.ts` | ⬜ Pending |
-| 2.10 | Add to cart spec | `tests/customer/addToCart.spec.ts` | ⬜ Pending |
-| 2.11 | Checkout flow spec | `tests/customer/checkout.spec.ts` | ⬜ Pending |
-| 2.12 | Add `customerTests` project to `playwright.config.ts` | `playwright.config.ts` | ⬜ Pending |
+| 2.8 | Customer login spec (4 tests) | `tests/customer/customerLogin.spec.ts` | ✅ Done |
+| 2.9 | Browse products spec (4 tests) | `tests/customer/browseProducts.spec.ts` | ✅ Done |
+| 2.10 | Add to cart spec (4 tests) | `tests/customer/addToCart.spec.ts` | ✅ Done |
+| 2.11 | Checkout flow spec (serial, 4 tests) | `tests/customer/checkout.spec.ts` | ✅ Done |
+| 2.12 | Add `customerJourney` project to `playwright.config.ts` | `playwright.config.ts` | ✅ Done |
 
 ---
 
@@ -211,33 +244,34 @@ tests/
 
 | # | Issue | File | Priority |
 |---|-------|------|----------|
-| T1 | `dependencies` commented out in all config projects — manual order needed | `playwright.config.ts` | Medium |
+| T1 | ~~`dependencies` in playwright.config.ts~~ — **Removed: no deps, projects run freely** | `playwright.config.ts` | ✅ Fixed |
 | T2 | `e2eCreateMarketplace.spec.ts` is old codegen, not POM, not in use | `tests/e2e/` | Low |
 | T3 | `countryDropdownTrigger` uses `nth(2)` — fragile if UI changes | `marketplaceOnboardingPage.ts` | Low |
 | T4 | `divisionDropdownTrigger` uses `nth(5)` — fragile if UI changes | `marketplaceOnboardingPage.ts` | Low |
-| T5 | ~~`setupGuide.spec.ts` uses `adminPage` fixture but navigates to marketplace subdomain~~ — Fixed: same credentials, just update `ADMIN_URL` in `.env` to new marketplace URL + re-run setup | `utils/testData.ts`, `tests/admin/setupGuide.spec.ts` | ✅ Fixed |
+| T5 | ~~`setupGuide.spec.ts` wrong fixture~~ — Fixed | `utils/testData.ts` | ✅ Fixed |
+| T6 | Customer storefront page locators (`pages/customer/*.ts`) need UI inspection to confirm | `pages/customer/*.ts` | Medium |
 
 ---
 
 ## 🗂️ Environment Variables Reference
 
 ```env
-# Required — Main Marketplace Site
+# Main Marketplace Site (admin + vendor + customer share same base URL)
 ADMIN_URL=https://your-store.flycom.shop
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=your_password
 
 VENDOR_URL=https://your-store.flycom.shop
-VENDOR_EMAIL=vendor@example.com
+VENDOR_EMAIL=vendor@example.com        # Must match journey vendor account created by seedData.spec.ts
 VENDOR_PASSWORD=your_password
 
-# Optional — Customer (Storefront)
 CUSTOMER_URL=https://your-store.flycom.shop
-CUSTOMER_EMAIL=customer@example.com
+CUSTOMER_EMAIL=customer@example.com    # Must match journey customer account created by seedData.spec.ts
 CUSTOMER_PASSWORD=your_password
 
-# Optional — Dokan Cloud (app.dokan.co)
-DOKAN_CLOUD_URL=https://app.dokan.co
+# FlyCommerce Cloud App (app.flycommerce.com — formerly app.dokan.co)
+# Env vars kept as DOKAN_CLOUD_* for backwards compatibility
+DOKAN_CLOUD_URL=https://app.flycommerce.com
 DOKAN_CLOUD_EMAIL=your@email.com
 DOKAN_CLOUD_PASSWORD=your_password
 ```
@@ -280,8 +314,27 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `utils/testData.ts` — added `SeedData` export (fixed Brand/Category/Collection/Attribute constants for product tests) |
 | Apr 2025 | `tests/admin/seedData.spec.ts` created — 4 serial tests that create permanent seed fixtures; reuses existing page objects + SeedData constants |
 | Apr 2025 | `playwright.config.ts` — `seedData.spec.ts` added first in `adminPreSetup`, `productAttribute.spec.ts` added after `collectionCreate.spec.ts` |
+| Apr 2025 | **Session 5 — FlyCommerce rebrand + 3-phase auth + Phase 2 customer journey** |
+| Apr 2025 | `dokanCloudLoginPage.ts` → renamed to `flycommerceLoginPage.ts` |
+| Apr 2025 | `utils/testData.ts` — renamed `dokanCloudUrl` → `flycommerceUrl`; added `SeedData.vendor`, `SeedData.customer`, `SeedData.product` (credentials read from `.env`) |
+| Apr 2025 | `utils/fakerData.ts` — added `generateCheckoutData()` for customer checkout forms |
+| Apr 2025 | `tests/auth.setup.ts` — renamed dokanCloud → flycommerce; vendor+customer auth wrapped in try/catch (graceful skip on Phase 1) |
+| Apr 2025 | `tests/fixtures/auth.fixtures.ts` — `dokanCloudPage` → `flycommercePage`; `customerPage` fixture checks auth file existence; graceful skip if credentials/file missing |
+| Apr 2025 | `tests/app_store/marketplaceOnboarding.spec.ts` — updated fixture reference from `dokanCloudPage` → `flycommercePage` |
+| Apr 2025 | `pages/admin/customerManagementPage.ts` — `createCustomer()` accepts optional `password` field; added `verifyCustomerCreatedSuccessfully()` method |
+| Apr 2025 | `tests/admin/seedData.spec.ts` — added 2 new tests: "Seed: create journey Vendor account" + "Seed: create journey Customer account" (uses SeedData.vendor/customer from .env) |
+| Apr 2025 | `pages/customer/` — 5 new POMs: `customerAuthPage`, `storefrontPage`, `productDetailPage`, `cartPage`, `checkoutPage` |
+| Apr 2025 | `tests/customer/` — 4 new specs: `customerLogin`, `browseProducts`, `addToCart`, `checkout` (serial checkout flow with shared orderId) |
+| Apr 2025 | `playwright.config.ts` — fully rewritten to 8-project dependency chain (setup → adminSeedSetup → setupAuth → adminCRUD/vendorJourney → customerJourney → adminVerify → cleanup) |
+| Apr 2026 | **Session 6 — Auth setup fixes + architecture cleanup** |
+| Apr 2026 | `auth.setup.ts` — split into two files: `auth.setup.ts` (admin+flycommerce only) and `auth.setupUsers.ts` (vendor+customer only, Phase 3) |
+| Apr 2026 | `auth.setup.ts` — fixed admin login locators: `#login-email` → `getByRole('textbox', { name: 'Email Address' })` etc. (matches adminAuthPage.ts, works on flycom.shop) |
+| Apr 2026 | `auth.setupUsers.ts` — fixed vendor login locators: `#login-email`/`//button[@type='submit']` → role-based locators (vendor portal is same React app as admin) |
+| Apr 2026 | `auth.setupUsers.ts` — simplified: switched from `browser.newContext()` pattern to simple `page` fixture (same as admin) |
+| Apr 2026 | `playwright.config.ts` — removed ALL `dependencies` from projects; no forced re-runs; auth JSON files handle sessions; setup steps run manually once |
+| Apr 2026 | `customerManagementPage.ts` — fixed `createPasswordInput` locator: `getByRole('textbox', { name: 'Password', exact: true })` → `getByRole('textbox', { name: '********' })` (actual placeholder); added `createConfirmPasswordInput`; `createCustomer()` now fills both password fields |
 
 ---
 
-**Last Updated:** April 2025 (Session 4)  
-**Current Phase:** Phase 1 (Stabilize) — moving to Phase 2 (Customer Flow)
+**Last Updated:** April 2026 (Session 6)  
+**Current Phase:** Phase 2 ✅ Complete — auth architecture stabilized — moving to Phase 3 (Subscription Plans & Commission)

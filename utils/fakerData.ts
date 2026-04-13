@@ -78,3 +78,17 @@ export const generateProductData = () => ({
     regularPrice: randomPrice(),
     salePrice: faker.commerce.price({ min: 5, max: 9, dec: 2 }),
 });
+
+/**
+ * Generate checkout form data for customer journey tests.
+ * City and country are fixed for Bangladesh marketplace.
+ */
+export const generateCheckoutData = () => ({
+    firstName: faker.person.firstName(),
+    lastName:  faker.person.lastName(),
+    address:   faker.location.streetAddress(),
+    city:      'Dhaka',
+    country:   'Bangladesh',
+    zipCode:   faker.string.numeric(4),
+    phone:     `017${faker.string.numeric(8)}`,
+});

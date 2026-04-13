@@ -57,17 +57,17 @@ export class CategoryManagementPage {
 Authentication is handled through custom fixtures in `tests/fixtures/auth.fixtures.ts`.
 
 **Available Fixtures:**
-- `adminPage` - Admin role authentication (main Dokan site)
-- `vendorPage` - Vendor role authentication (main Dokan site)
-- `customerPage` - Customer role authentication (main Dokan site)
-- `dokanCloudPage` - Dokan Cloud app user authentication (app.dokan.co)
+- `adminPage` - Admin role authentication (`/admin`)
+- `vendorPage` - Vendor role authentication (`/vendor`)
+- `customerPage` - Customer role authentication (storefront `/`)
+- `flycommercePage` - FlyCommerce Cloud app user authentication (`app.flycommerce.com`)
 
 **Key Points:**
 - Uses stored authentication states from `playwright/.auth/` directory
 - Each fixture creates a new browser context with saved session state
 - Fixtures automatically navigate to relevant URLs to ensure session is loaded
-- Dokan Cloud and Customer fixtures are optional - skip gracefully if credentials not configured
-- All fixtures include proper waits (`networkidle`, `domcontentloaded`, `waitForTimeout`) for stability
+- `flycommercePage` and `customerPage` skip gracefully if credentials not configured
+- All fixtures include proper waits for stability
 
 **Usage in Tests:**
 ```typescript
@@ -79,32 +79,42 @@ test('Admin test', async ({ adminPage }) => {
     // Use page object methods...
 });
 
-test('E2E Marketplace test', async ({ dokanCloudPage }) => {
-    // dokanCloudPage.page is already authenticated to app.dokan.co
-    const onboardingPage = new MarketplaceOnboardingPage(dokanCloudPage.page);
+test('FlyCommerce test', async ({ flycommercePage }) => {
+    // flycommercePage.page is already authenticated to app.flycommerce.com
+    const onboardingPage = new MarketplaceOnboardingPage(flycommercePage.page);
     // Use page object methods...
 });
 ```
 
-### 3. Authentication Setup
-Authentication states are created via `tests/auth.setup.ts` which:
-- Logs in as Admin, Vendor, Customer, and Dokan Cloud user
-- Saves session states to `playwright/.auth/` directory:
-  - `admin.json` - Admin session (main site)
-  - `vendor.json` - Vendor session (main site)
-  - `customer.json` - Customer session (main site, optional)
-  - `dokanCloud.json` - Dokan Cloud session (app.dokan.co, optional)
-- All credentials loaded from `.env` file via `utils/testData.ts`
-- Customer and Dokan Cloud authentication skip gracefully if credentials not configured
+### 3. Authentication Setup — Two-File Split
+
+Authentication is split across **two files** to match the 3-phase strategy for a fresh marketplace:
+
+**`tests/auth.setup.ts`** — Phase 1 (`setup` project):
+- Authenticates **Admin** + **FlyCommerce** only
+- Admin and FlyCommerce accounts always exist, so this always succeeds
+- Saves: `playwright/.auth/admin.json`, `playwright/.auth/flycommerce.json`
 - Run with: `npx playwright test --project=setup`
 
-**Setup Pattern:**
-Each authentication setup:
-1. Navigates to login page
-2. Fills credentials from environment variables
-3. Handles optional elements (e.g., Privacy Policy)
-4. Waits for successful login
-5. Saves authentication state to JSON file
+**`tests/auth.setupUsers.ts`** — Phase 3 (`setupAuth` project):
+- Authenticates **Vendor** + **Customer** only
+- Run AFTER `adminSeedSetup` has created these accounts
+- Saves: `playwright/.auth/vendor.json`, `playwright/.auth/customer.json`
+- Run with: `npx playwright test --project=setupAuth`
+
+**Login Locators (important for future reference):**
+- Admin portal (`/admin/login`) and Vendor portal (`/vendor/login`) both use the **same React app** → same locators: `getByRole('textbox', { name: 'Email Address' })`, `getByRole('textbox', { name: 'Password' })`, `getByRole('button', { name: 'Sign In', exact: true })`
+- Customer storefront (`/login`) uses a **different frontend** → `#reg-email`, `#login-password`
+- FlyCommerce app: `getByRole('textbox', { name: 'Enter your email' })`, `getByRole('textbox', { name: 'Write your password' })`
+
+**Full one-time setup flow (fresh marketplace):**
+```bash
+npx playwright test --project=setup          # admin.json + flycommerce.json
+npx playwright test --project=adminSeedSetup # creates seed data + vendor + customer accounts
+npx playwright test --project=setupAuth      # vendor.json + customer.json
+```
+
+After these 3 steps, all `.auth` JSON files exist and any project can run freely without re-running setup.
 
 ---
 
@@ -127,8 +137,8 @@ My Dokan Automation/
 │   ├── vendor/                         # Vendor role page objects (main site)
 │   │   ├── vendorAuthPage.ts           # Vendor login page
 │   │   └── productCreatePage.ts        # Product creation (with image upload)
-│   ├── app_store/                      # Dokan Cloud (app.dokan.co) page objects
-│   │   ├── dokanCloudLoginPage.ts      # Dokan Cloud login page
+│   ├── app_store/                      # FlyCommerce Cloud (app.flycommerce.com) page objects
+│   │   ├── flycommerceLoginPage.ts     # FlyCommerce Cloud login page
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation and onboarding flow
 │   │                                   #   (handles address autocomplete, optional chat close)
 │   ├── common/                         # Shared/common helpers
@@ -139,8 +149,8 @@ My Dokan Automation/
 ├── tests/                              # Test specifications organized by role/area
 │   ├── admin/                          # Admin test suites (main site)
 │   │   ├── adminLogin.spec.ts          # Admin login verification
-│   │   ├── seedData.spec.ts            # Creates fixed seed entities (Brand/Category/Collection/Attribute)
-│   │   │                               #   used as stable fixtures by product creation tests
+│   │   ├── seedData.spec.ts            # Creates fixed seed entities (Brand/Category/Collection/Attribute
+│   │   │                               #   + journey Vendor + journey Customer accounts from .env)
 │   │   ├── categoryCreate.spec.ts      # Create category (random faker data)
 │   │   ├── brandCreate.spec.ts         # Create brand with image (random faker data)
 │   │   ├── collectionCreate.spec.ts    # Create collection with image (random faker data)
@@ -155,16 +165,20 @@ My Dokan Automation/
 │   ├── vendor/                         # Vendor test suites (main site)
 │   │   ├── vendorLogin.spec.ts         # Vendor login verification
 │   │   └── productCreate.spec.ts       # Create product with images and details
-│   ├── app_store/                      # Dokan Cloud app onboarding tests
+│   ├── app_store/                      # FlyCommerce Cloud app tests (app.flycommerce.com)
 │   │   └── marketplaceOnboarding.spec.ts # Complete marketplace creation flow
+│   ├── customer/                       # Customer storefront test suites
+│   │   ├── customerLogin.spec.ts       # Login + logout flow
+│   │   ├── browseProducts.spec.ts      # Product search and detail view
+│   │   ├── addToCart.spec.ts           # Cart operations
+│   │   └── checkout.spec.ts            # Full checkout flow (serial, shared orderId)
 │   ├── e2e/                            # End-to-end test suites
 │   │   └── e2eDeleteProductRelatedThings.spec.ts  # Serial deletion flow
-│   │                                   #   (Product → Category → Brand → Collection)
 │   ├── fixtures/                       # Custom test fixtures
 │   │   └── auth.fixtures.ts            # Authentication fixtures for all roles
-│   │                                   #   (adminPage, vendorPage, customerPage, dokanCloudPage)
-│   ├── customer/                       # Customer test suites (placeholder)
-│   └── auth.setup.ts                   # Authentication setup script (creates session files)
+│   │                                   #   (adminPage, vendorPage, customerPage, flycommercePage)
+│   ├── auth.setup.ts                   # Phase 1 auth: Admin + FlyCommerce (always runs first)
+│   └── auth.setupUsers.ts              # Phase 3 auth: Vendor + Customer (runs after adminSeedSetup)
 │
 ├── utils/                              # Utility files
 │   ├── testData.ts                     # Environment variables & test data loader
@@ -176,13 +190,15 @@ My Dokan Automation/
 │
 ├── playwright/                         # Playwright artifacts
 │   └── .auth/                          # Stored authentication states (gitignored)
-│       ├── admin.json                  # Admin session (main site)
-│       ├── vendor.json                 # Vendor session (main site)
-│       ├── customer.json               # Customer session (main site, optional)
-│       └── dokanCloud.json             # Dokan Cloud session (app.dokan.co, optional)
+│       ├── admin.json                  # Admin session
+│       ├── vendor.json                 # Vendor session
+│       ├── customer.json               # Customer session (optional)
+│       └── flycommerce.json            # FlyCommerce Cloud app session
 │
 ├── playwright.config.ts                # Playwright configuration
-│   # Projects: setup, marketplaceSetup, adminPreSetup, vendorProductCreation, cleanup
+│   # Projects (no dependencies — run manually in order or freely after setup):
+│   #   setup, adminSeedSetup, setupAuth, adminCRUD, vendorJourney,
+│   #   customerJourney, adminVerify, cleanup, marketplaceSetup
 ├── package.json                        # Dependencies and scripts
 ├── PROJECT_CONTEXT.md                  # This file - comprehensive project documentation
 ├── tsconfig.json                       # TypeScript configuration
@@ -932,7 +948,7 @@ When working on this project, refer to:
 
 ---
 
-**Last Updated:** April 2025 (Session 4)  
+**Last Updated:** April 2025 (Session 5)  
 **Framework Version:** Playwright 1.56.1  
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 
@@ -1150,6 +1166,111 @@ When working on this codebase:
 - **`deactivateCustomer()`**: same fix — uses `tableActionButton` with clean 300ms wait
 - **`searchCustomer()`**: comment updated to "Search customer by email"
 - **`completeCustomerWorkflow()`**: searches by `email` (not `lastName`); re-navigates + re-searches before `deactivateCustomer()` to avoid stale dropdown state
+
+### 15. FlyCommerce Rebrand + Journey Account Strategy + Phase 2 Customer Journey (April 2025)
+
+#### Rebranding: dokanCloud → flycommerce
+
+All "Dokan Cloud" references have been renamed to "FlyCommerce" throughout the codebase:
+
+| Old | New |
+|-----|-----|
+| `dokanCloudLoginPage.ts` | `flycommerceLoginPage.ts` (file renamed) |
+| `DokanCloudPage` fixture | `flycommercePage` fixture |
+| `dokanCloud.json` auth file | `flycommerce.json` auth file |
+| `Urls.dokanCloudUrl/Email/Password` | `Urls.flycommerceUrl/Email/Password` |
+| `authenticate dokan cloud` test | `authenticate flycommerce` test |
+| `dokanCloudPage` in spec files | `flycommercePage` in spec files |
+
+> The env variables (`DOKAN_CLOUD_URL/EMAIL/PASSWORD`) are kept unchanged for backwards compatibility — `testData.ts` just maps them to the new `flycommerceUrl/Email/Password` keys.
+
+#### Three-Phase Auth Strategy (fresh marketplace)
+
+A fresh marketplace has no vendor or customer accounts on day 1. This creates a chicken-and-egg problem: `auth.setup.ts` can't save vendor/customer sessions before those accounts exist.
+
+**Solution — run `auth.setup.ts` twice:**
+
+```
+Phase 1 → "setup" project
+  auth.setup.ts runs → admin.json + flycommerce.json saved
+  vendor/customer auth: try/catch → graceful SKIP (accounts don't exist yet)
+
+Phase 2 → "adminSeedSetup" project  (depends on: setup)
+  seedData.spec.ts creates:
+    Brand, Category, Collection, Attribute (permanent fixtures)
+    Journey Vendor account (email=VENDOR_EMAIL, password=VENDOR_PASSWORD)
+    Journey Customer account (email=CUSTOMER_EMAIL, password=CUSTOMER_PASSWORD)
+
+Phase 3 → "setupAuth" project  (depends on: adminSeedSetup)
+  auth.setup.ts runs AGAIN → vendor.json + customer.json now saved
+  (same file, different Playwright project name)
+```
+
+#### Journey Account Pattern
+
+- **Never use faker for journey accounts** — they need known, fixed credentials
+- `SeedData.vendor.email` and `.password` read directly from `process.env.VENDOR_EMAIL/PASSWORD`
+- `SeedData.customer.email` and `.password` read directly from `process.env.CUSTOMER_EMAIL/PASSWORD`
+- Single source of truth: `.env` file — no duplication
+- `createCustomer()` now accepts optional `password?: string` — if provided, fills the field directly instead of clicking "Generate Password"
+
+#### New `SeedData` entries in `utils/testData.ts`
+
+```typescript
+SeedData.vendor   → { firstName, lastName, storeName, email, password, phone, country, address, division, city, subscriptionPlan }
+SeedData.customer → { firstName, lastName, email, password, phone }
+SeedData.product  → { name: 'Automation Product', price: '100' }
+```
+
+#### 8-Project Dependency Chain in `playwright.config.ts`
+
+```
+setup
+  └─► adminSeedSetup
+        ├─► adminCRUD       (CRUD tests — faker data — parallel)
+        └─► setupAuth
+              ├─► vendorJourney
+              │     └─► customerJourney
+              │               └─► adminVerify
+              │                       └─► cleanup
+              └─(also feeds customerJourney)
+```
+
+`marketplaceSetup` is standalone — run manually when creating a new marketplace.
+
+#### `customerPage` Fixture Improvements (`auth.fixtures.ts`)
+
+- Checks for `CUSTOMER_EMAIL` env var — skips gracefully if not set
+- Checks for `playwright/.auth/customer.json` existence — skips with clear instructions if missing
+- On success: navigates to `Urls.customerUrl` to confirm session is active
+
+#### Customer Pages Created (`pages/customer/`)
+
+| File | Key Methods |
+|------|-------------|
+| `customerAuthPage.ts` | `navigateToLogin()`, `login()`, `logout()`, `verifyLoggedIn()`, `verifyLoggedOut()` |
+| `storefrontPage.ts` | `navigateToShop()`, `searchProduct()`, `selectProduct()`, `verifyProductVisible()` |
+| `productDetailPage.ts` | `setQuantity()`, `addToCart()`, `verifyAddedToCart()`, `verifyProductTitle()` |
+| `cartPage.ts` | `navigateToCart()`, `verifyProductInCart()`, `applyCoupon()`, `proceedToCheckout()` |
+| `checkoutPage.ts` | `fillContactInfo()`, `fillShippingAddress()`, `selectPaymentMethod()`, `placeOrder()`, `verifyOrderConfirmation()`, `getOrderId()` |
+
+> **Note:** Customer page locators are based on WooCommerce standard patterns. Confirm against actual storefront UI before running — adjust any locators that don't match.
+
+#### `generateCheckoutData()` added to `utils/fakerData.ts`
+
+Generates random billing address for checkout tests:
+```typescript
+{ firstName, lastName, address, city: 'Dhaka', country: 'Bangladesh', zipCode, phone }
+```
+
+#### Customer Test Specs (`tests/customer/`)
+
+| File | Tests | Pattern |
+|------|-------|---------|
+| `customerLogin.spec.ts` | CL001–CL004 | Independent — uses fixture session |
+| `browseProducts.spec.ts` | CBR001–CBR004 | Independent — uses `SeedData.product.name` |
+| `addToCart.spec.ts` | CCT001–CCT004 | Independent — add → verify → cart |
+| `checkout.spec.ts` | CCO001–CCO004 | `test.describe.serial` — full checkout flow |
 
 ### 14. Attribute CRUD + Seed Data Setup (April 2025)
 **New page object and two-tier data strategy for product creation prerequisites:**

@@ -1,151 +1,161 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
+ * Load .env file
  * https://github.com/motdotla/dotenv
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
+ * ================================================================================================
+ * Playwright Configuration — FlyCommerce Automation
+ * ================================================================================================
+ *
+ * SETUP (run once manually on a fresh marketplace, in order):
+ *
+ *   npx playwright test --project=setup
+ *     → Saves admin.json + flycommerce.json
+ *
+ *   npx playwright test --project=adminSeedSetup --no-deps
+ *     → Admin creates seed data + journey vendor + journey customer accounts
+ *
+ *   npx playwright test --project=setupAuth --no-deps
+ *     → Saves vendor.json + customer.json (accounts now exist)
+ *
+ * After the above 3 steps, all .auth JSON files exist and any project can be run freely:
+ *
+ *   npx playwright test --project=adminCRUD
+ *   npx playwright test --project=vendorJourney
+ *   npx playwright test --project=customerJourney
+ *   etc.
+ *
+ * No dependencies are set on test projects — auth JSON files handle session reuse.
+ *
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './tests',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+    testDir: './tests',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-  },
+    /* Run tests in files in parallel within each project */
+    fullyParallel: true,
 
-  /* Configure projects for major browsers */
-  projects: [
-    // ========== SETUP PROJECT - Auth credentials save করবে ==========
-    {
-      name: 'setup',
-      testMatch: /.*auth\.setup\.ts/,
+    /* Fail the build on CI if you accidentally left test.only in the source code */
+    forbidOnly: !!process.env.CI,
+
+    /* Retry on CI only */
+    retries: process.env.CI ? 2 : 0,
+
+    /* Workers: 1 on CI to avoid resource contention; auto on local */
+    workers: process.env.CI ? 1 : undefined,
+
+    /* HTML reporter */
+    reporter: 'html',
+
+    /* Shared settings for all projects */
+    use: {
+        trace: 'on-first-retry',
     },
 
-    // ========== CHROMIUM PROJECT - Main test runner ==========
-    // {
-    //   name: 'chromium',
-    //   use: {
-    //     ...devices['Desktop Chrome'],
-    //     storageState: 'playwright/.auth/admin.json',
-    //   },
-    //   // dependencies: ['setup'],
-    // },
+    projects: [
 
-    // ========== E2E Setup Project - Create Marketplace ==========
-    {
-      name: "marketplaceSetup",
-      testMatch: [
-        'tests/app_store/marketplaceOnboarding.spec.ts',
-      ],
-      use: {
-        ...devices['Desktop Chrome'],
-        // storageState: 'playwright/.auth/admin.json',
-      },
-      // dependencies: ['setup'],
-    },
+        // ── Phase 1: Admin + FlyCommerce auth ─────────────────────────────────
+        // Vendor/customer auth gracefully skipped — accounts don't exist yet.
+        {
+            name: 'setup',
+            testMatch: '**/auth.setup.ts',
+        },
 
-    // ========== ADMIN PRE SETUP - Category, Brand, Collection create করবে ==========
-    {
-      name: "adminPreSetup",
-      testMatch: [
-        // Seed data runs first — creates fixed Brand, Category, Collection, Attribute
-        // that product creation tests always depend on
-        'tests/admin/seedData.spec.ts',
-        'tests/admin/vendorCreate.spec.ts',
-        'tests/admin/categoryCreate.spec.ts',
-        'tests/admin/brandCreate.spec.ts',
-        'tests/admin/collectionCreate.spec.ts',
-        'tests/admin/productAttribute.spec.ts',
-        // Note: setupGuide.spec.ts should be run after marketplaceOnboarding.spec.ts
-        'tests/admin/setupGuide.spec.ts',
-        'tests/admin/customerManagement.spec.ts',
-      ],
-      use: {
-        ...devices['Desktop Chrome'],
-        // storageState: 'playwright/.auth/admin.json',
-      },
-      // dependencies: ['setup'],
-    },
-    {
-      name: "vendorProductCreation",
-      testMatch: [
-        'productCreate.spec.ts',
-        'tests/e2e/e2eDeleteProductRelatedThings.spec.ts',
-      ],
-      use: {
-        ...devices['Desktop Chrome'],
-        // storageState: 'playwright/.auth/admin.json',
-      },
-      // dependencies: ['setup'],
-    },
+        // ── One-time setup: seed data (run manually, no-deps) ─────────────────
+        // Creates permanent fixtures: Brand, Category, Collection, Attribute,
+        // journey Vendor account, journey Customer account.
+        // Run once: npx playwright test --project=adminSeedSetup --no-deps
+        {
+            name: 'adminSeedSetup',
+            testMatch: '**/admin/seedData.spec.ts',
+            use: { ...devices['Desktop Chrome'] },
+        },
 
-    // ========== CLEANUP PROJECT - সব delete করবে ==========
-    {
-      name: "cleanup",
-      testMatch: [
-        //TODO: Add more tests here''
-      ],
-      use: {
-        ...devices['Desktop Chrome'],
-        // storageState: 'playwright/.auth/admin.json',
-      },
-      // // dependencies: ['setup'],
-    },
+        // ── One-time setup: vendor + customer auth (run manually, no-deps) ─────
+        // Saves vendor.json + customer.json after accounts are created by adminSeedSetup.
+        // Run once: npx playwright test --project=setupAuth --no-deps
+        {
+            name: 'setupAuth',
+            testMatch: '**/auth.setupUsers.ts',
+        },
 
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+        // ── Admin CRUD tests ───────────────────────────────────────────────────
+        // Uses admin.json. Run freely after setup.
+        {
+            name: 'adminCRUD',
+            testMatch: [
+                '**/admin/adminLogin.spec.ts',
+                '**/admin/categoryCreate.spec.ts',
+                '**/admin/deleteCategory.spec.ts',
+                '**/admin/brandCreate.spec.ts',
+                '**/admin/deleteBrand.spec.ts',
+                '**/admin/collectionCreate.spec.ts',
+                '**/admin/deleteCollection.spec.ts',
+                '**/admin/productAttribute.spec.ts',
+                '**/admin/vendorCreate.spec.ts',
+                '**/admin/customerManagement.spec.ts',
+                '**/admin/setupGuide.spec.ts',
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
 
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+        // ── Vendor journey — login + create seed product ───────────────────────
+        // Uses vendor.json. Run after setupAuth.
+        {
+            name: 'vendorJourney',
+            testMatch: [
+                '**/vendor/vendorLogin.spec.ts',
+                '**/vendor/productCreate.spec.ts',
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+        // ── Customer journey — browse, cart, checkout ──────────────────────────
+        // Uses customer.json. Run after vendorJourney (product must exist).
+        {
+            name: 'customerJourney',
+            testMatch: [
+                '**/customer/customerLogin.spec.ts',
+                '**/customer/browseProducts.spec.ts',
+                '**/customer/addToCart.spec.ts',
+                '**/customer/checkout.spec.ts',
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
-  ],
+        // ── Admin verify — confirm orders ──────────────────────────────────────
+        {
+            name: 'adminVerify',
+            testMatch: [
+                // '**/admin/orderManagement.spec.ts',  ← add when created
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+        // ── Cleanup — delete products + related items ──────────────────────────
+        {
+            name: 'cleanup',
+            testMatch: [
+                '**/admin/deleteProduct.spec.ts',
+                '**/e2e/e2eDeleteProductRelatedThings.spec.ts',
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+        // ── Marketplace onboarding (standalone — run before any other project) ─
+        // Creates a new marketplace on app.flycommerce.com.
+        // Run once: npx playwright test --project=marketplaceSetup
+        {
+            name: 'marketplaceSetup',
+            testMatch: '**/app_store/marketplaceOnboarding.spec.ts',
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+    ],
 });

@@ -19,6 +19,8 @@ export class CustomerManagementPage {
     readonly phoneInput: Locator;
     readonly generatePasswordText: Locator;
     readonly generatePasswordButton: Locator;
+    readonly createPasswordInput: Locator;       // password field in Add Customer modal (placeholder: ******** )
+    readonly createConfirmPasswordInput: Locator; // confirm password field in Add Customer modal
     readonly createButton: Locator;
     readonly customerCreatedMessage: Locator;
 
@@ -63,6 +65,9 @@ export class CustomerManagementPage {
         this.phoneInput = page.getByRole('textbox', { name: 'Phone' });
         this.generatePasswordText = page.getByText('PasswordGenerate Password');
         this.generatePasswordButton = page.getByText('Generate Password');
+        // Placeholder is literal asterisks — the field has no accessible label other than placeholder
+        this.createPasswordInput = page.getByRole('textbox', { name: '********' });
+        this.createConfirmPasswordInput = page.getByRole('textbox', { name: 'Confirm Password' });
         this.createButton = page.getByRole('button', { name: 'Create' });
         this.customerCreatedMessage = page.getByText('Customer created successfully');
 
@@ -104,13 +109,18 @@ export class CustomerManagementPage {
     }
 
     /**
-     * Create customer with provided details
+     * Create customer with provided details.
+     *
+     * @param customerData.password — optional. If provided, fills the password field directly
+     *   (used by seedData.spec.ts to set known credentials for journey customer account).
+     *   If omitted, clicks "Generate Password" to auto-generate (used by CRUD tests).
      */
     async createCustomer(customerData: {
         firstName: string;
         lastName: string;
         email: string;
         phone: string;
+        password?: string;
     }) {
         // Click Add Customer button
         await this.addCustomerButton.click();
@@ -128,12 +138,27 @@ export class CustomerManagementPage {
         await this.phoneInput.click();
         await this.phoneInput.fill(customerData.phone);
 
-        // Generate password
+        // Password: fill explicitly if provided (journey account), otherwise auto-generate
         await expect(this.generatePasswordText).toBeVisible();
-        await this.generatePasswordButton.click();
+        if (customerData.password) {
+            // Fill both password + confirm password — sets known credentials for later auth setup
+            await this.createPasswordInput.click();
+            await this.createPasswordInput.fill(customerData.password);
+            await this.createConfirmPasswordInput.click();
+            await this.createConfirmPasswordInput.fill(customerData.password);
+        } else {
+            // Auto-generate password (CRUD test path — no need to know the actual value)
+            await this.generatePasswordButton.click();
+        }
 
         // Create customer
         await this.createButton.click();
+    }
+
+    /**
+     * Verify customer was created successfully via toast notification
+     */
+    async verifyCustomerCreatedSuccessfully() {
         await expect(this.customerCreatedMessage).toBeVisible({ timeout: 10000 });
     }
 
@@ -267,6 +292,7 @@ export class CustomerManagementPage {
             email: customerData.email,
             phone: customerData.phone,
         });
+        await this.verifyCustomerCreatedSuccessfully();
 
         // Search and view customer by email (unique identifier)
         await this.searchCustomer(customerData.email);

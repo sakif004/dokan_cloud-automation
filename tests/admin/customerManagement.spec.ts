@@ -63,6 +63,7 @@ test.describe('Admin - Customer Management', () => {
       // Navigate and create customer
       await customerPage.navigateToCustomers();
       await customerPage.createCustomer(customerData);
+      await customerPage.verifyCustomerCreatedSuccessfully();
     });
 
     test('Search and view customer', async ({ adminPage }) => {
