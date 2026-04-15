@@ -17,22 +17,22 @@ let Urls: {
     flycommercePassword: string;
 } = {
     // Main Marketplace Site
-    adminUrl:     process.env.ADMIN_URL       || '',
-    adminEmail:   process.env.ADMIN_EMAIL     || '',
+    adminUrl: process.env.ADMIN_URL || '',
+    adminEmail: process.env.ADMIN_EMAIL || '',
     adminPassword: process.env.ADMIN_PASSWORD || '',
 
-    vendorUrl:      process.env.VENDOR_URL       || '',
-    vendorEmail:    process.env.VENDOR_EMAIL     || '',
-    vendorPassword: process.env.VENDOR_PASSWORD  || '',
+    vendorUrl: process.env.VENDOR_URL || '',
+    vendorEmail: process.env.VENDOR_EMAIL || '',
+    vendorPassword: process.env.VENDOR_PASSWORD || '',
 
-    customerUrl:      process.env.CUSTOMER_URL       || '',
-    customerEmail:    process.env.CUSTOMER_EMAIL     || '',
-    customerPassword: process.env.CUSTOMER_PASSWORD  || '',
+    customerUrl: process.env.CUSTOMER_URL || '',
+    customerEmail: process.env.CUSTOMER_EMAIL || '',
+    customerPassword: process.env.CUSTOMER_PASSWORD || '',
 
     // FlyCommerce Cloud App (app.flycommerce.com — formerly Dokan Cloud)
     // env var name kept as DOKAN_CLOUD_* for backwards compatibility
-    flycommerceUrl:      process.env.DOKAN_CLOUD_URL      || '',
-    flycommerceEmail:    process.env.DOKAN_CLOUD_EMAIL    || '',
+    flycommerceUrl: process.env.DOKAN_CLOUD_URL || '',
+    flycommerceEmail: process.env.DOKAN_CLOUD_EMAIL || '',
     flycommercePassword: process.env.DOKAN_CLOUD_PASSWORD || '',
 };
 
@@ -72,30 +72,30 @@ export const SeedData = {
 
     // ─── Journey Accounts (created by adminSeedSetup, used across journey tests) ──
     vendor: {
-        firstName:        'Journey',
-        lastName:         'Vendor',
-        storeName:        'Journey Vendor Store',
-        email:            process.env.VENDOR_EMAIL    ?? '',  // must match .env VENDOR_EMAIL
-        password:         process.env.VENDOR_PASSWORD ?? '',  // must match .env VENDOR_PASSWORD
-        phone:            '01700000001',
-        country:          'Bangladesh',
-        address:          'wedevs Academy',
-        division:         'Dhaka',
-        city:             'Dhaka',
+        firstName: 'Journey',
+        lastName: 'Vendor',
+        storeName: 'Journey Vendor Store',
+        email: process.env.VENDOR_EMAIL ?? '',  // must match .env VENDOR_EMAIL
+        password: process.env.VENDOR_PASSWORD ?? '',  // must match .env VENDOR_PASSWORD
+        phone: '01700000001',
+        country: 'Bangladesh',
+        address: 'wedevs Academy',
+        division: 'Dhaka',
+        city: 'Dhaka',
         subscriptionPlan: 'Free Plan',
     },
     customer: {
         firstName: 'Journey',
-        lastName:  'Customer',
-        email:     process.env.CUSTOMER_EMAIL    ?? '',  // must match .env CUSTOMER_EMAIL
-        password:  process.env.CUSTOMER_PASSWORD ?? '',  // must match .env CUSTOMER_PASSWORD
-        phone:     '01800000001',
+        lastName: 'Customer',
+        email: process.env.CUSTOMER_EMAIL ?? '',  // must match .env CUSTOMER_EMAIL
+        password: process.env.CUSTOMER_PASSWORD ?? '',  // must match .env CUSTOMER_PASSWORD
+        phone: '01800000001',
     },
 
     // ─── Seed Product (vendor creates it, customer buys it) ───────────────────
     product: {
-        name:  'Automation Product',
-        price: '100',
+        name: 'Automation Product',
+        price: '1200',
     },
 };
 
