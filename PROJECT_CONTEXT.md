@@ -136,7 +136,10 @@ My Dokan Automation/
 │   │                                   #   (General Settings, Brand, Payment, Payout, Shipping)
 │   ├── vendor/                         # Vendor role page objects (main site)
 │   │   ├── vendorAuthPage.ts           # Vendor login page
-│   │   └── productCreatePage.ts        # Product creation (with image upload)
+│   │   └── productCreatePage.ts        # Product creation — full form:
+│   │                                   #   name, description, category, image (MediaManager),
+│   │                                   #   pricing, attribute (addAttribute), shipping,
+│   │                                   #   weight+unit, dimensions+unit, status, brand, collection
 │   ├── app_store/                      # FlyCommerce Cloud (app.flycommerce.com) page objects
 │   │   ├── flycommerceLoginPage.ts     # FlyCommerce Cloud login page
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation and onboarding flow
@@ -164,7 +167,8 @@ My Dokan Automation/
 │   │   └── setupGuide.spec.ts          # Complete setup guide after marketplace creation
 │   ├── vendor/                         # Vendor test suites (main site)
 │   │   ├── vendorLogin.spec.ts         # Vendor login verification
-│   │   └── productCreate.spec.ts       # Create product with images and details
+│   │   └── productCreate.spec.ts       # Create product — uses SeedData for all fixture data
+│   │                                   #   (brand, category, collection, attribute, product name/price)
 │   ├── app_store/                      # FlyCommerce Cloud app tests (app.flycommerce.com)
 │   │   └── marketplaceOnboarding.spec.ts # Complete marketplace creation flow
 │   ├── customer/                       # Customer storefront test suites
@@ -1201,9 +1205,9 @@ Phase 2 → "adminSeedSetup" project  (depends on: setup)
     Journey Vendor account (email=VENDOR_EMAIL, password=VENDOR_PASSWORD)
     Journey Customer account (email=CUSTOMER_EMAIL, password=CUSTOMER_PASSWORD)
 
-Phase 3 → "setupAuth" project  (depends on: adminSeedSetup)
-  auth.setup.ts runs AGAIN → vendor.json + customer.json now saved
-  (same file, different Playwright project name)
+Phase 3 → "setupAuth" project  (run manually: npx playwright test --project=setupAuth)
+  auth.setupUsers.ts runs → vendor.json + customer.json now saved
+  (separate file from auth.setup.ts — only contains vendor + customer auth)
 ```
 
 #### Journey Account Pattern
@@ -1219,24 +1223,30 @@ Phase 3 → "setupAuth" project  (depends on: adminSeedSetup)
 ```typescript
 SeedData.vendor   → { firstName, lastName, storeName, email, password, phone, country, address, division, city, subscriptionPlan }
 SeedData.customer → { firstName, lastName, email, password, phone }
-SeedData.product  → { name: 'Automation Product', price: '100' }
+SeedData.product  → { name: 'Automation Product', price: '1200' }
 ```
 
-#### 8-Project Dependency Chain in `playwright.config.ts`
+#### Projects in `playwright.config.ts` (no `dependencies` — all run independently)
 
 ```
-setup
-  └─► adminSeedSetup
-        ├─► adminCRUD       (CRUD tests — faker data — parallel)
-        └─► setupAuth
-              ├─► vendorJourney
-              │     └─► customerJourney
-              │               └─► adminVerify
-              │                       └─► cleanup
-              └─(also feeds customerJourney)
+setup            → auth.setup.ts          (admin.json + flycommerce.json)
+adminSeedSetup   → seedData.spec.ts       (seed entities + journey accounts — run once manually)
+setupAuth        → auth.setupUsers.ts     (vendor.json + customer.json — run once after adminSeedSetup)
+adminCRUD        → admin CRUD specs       (uses admin.json — run freely)
+vendorJourney    → vendor specs           (uses vendor.json — run after setupAuth)
+customerJourney  → customer specs         (uses customer.json — run after vendorJourney)
+adminVerify      → order verification     (placeholder — no tests yet)
+cleanup          → delete specs           (uses admin.json)
+marketplaceSetup → marketplaceOnboarding  (uses flycommerce.json — standalone, run manually)
 ```
 
-`marketplaceSetup` is standalone — run manually when creating a new marketplace.
+Run order for a fresh marketplace (one-time setup):
+```bash
+npx playwright test --project=setup
+npx playwright test --project=adminSeedSetup
+npx playwright test --project=setupAuth
+```
+After that, each project can run independently any time.
 
 #### `customerPage` Fixture Improvements (`auth.fixtures.ts`)
 
@@ -1317,5 +1327,67 @@ Generates random billing address for checkout tests:
 #### `playwright.config.ts` — `adminPreSetup` update
 - `seedData.spec.ts` added as the **first** entry in `testMatch`
 - `productAttribute.spec.ts` added after `collectionCreate.spec.ts`
+
+---
+
+### 16. Auth Architecture Overhaul + Product Create Update (April 2026 — Session 6)
+
+#### Auth Setup Split into Two Files
+
+`auth.setup.ts` now only contains **Admin + FlyCommerce** auth (Phase 1 — always succeeds).  
+`auth.setupUsers.ts` is a new file containing **Vendor + Customer** auth (Phase 3 — after accounts are created).
+
+**Why:** Vendor/customer accounts don't exist on Phase 1. Running them in the same file caused test failures (even with try/catch). Splitting ensures each file only runs when its accounts definitely exist.
+
+**Login locators (corrected and documented):**
+
+| Portal | URL path | Email locator | Password locator | Submit |
+|--------|----------|---------------|------------------|--------|
+| Admin | `/admin/login` | `getByRole('textbox', { name: 'Email Address' })` | `getByRole('textbox', { name: 'Password' })` | `getByRole('button', { name: 'Sign In', exact: true })` |
+| Vendor | `/vendor/login` | same as Admin (same React app) | same as Admin | same as Admin |
+| Customer (storefront) | `/login` | `#reg-email` | `#login-password` | `getByRole('button', { name: /sign in/i })` |
+| FlyCommerce app | `/login` | `getByRole('textbox', { name: 'Enter your email' })` | `getByRole('textbox', { name: 'Write your password' })` | `getByRole('button', { name: 'Sign In', exact: true })` |
+
+#### `playwright.config.ts` — Dependencies Removed
+
+All `dependencies` removed from every project. Projects now run independently using `.auth` JSON files via fixtures. No forced re-runs of setup chain.
+
+One-time setup (run manually in order on a fresh marketplace):
+```bash
+npx playwright test --project=setup           # admin.json + flycommerce.json
+npx playwright test --project=adminSeedSetup  # seed data + vendor + customer accounts
+npx playwright test --project=setupAuth       # vendor.json + customer.json
+```
+
+#### `pages/vendor/productCreatePage.ts` — Major Update
+
+New features added to `VendorProductPage`:
+
+| Addition | Details |
+|----------|---------|
+| `addAttribute(name)` | Clicks "Add Attribute" → fills name from existing seed attribute → toggles Visible → clicks Add |
+| `fillDimensions(..., weightUnit, dimensionUnit)` | Now also selects weight unit (default `'kg'`) and dimension unit (default `'cm'`) via React Select dropdowns |
+| `selectBrand(name)` | Fills `brandCombobox` with lowercase name → picks option (React Select search pattern) |
+| `selectCollection(name)` | Same pattern as brand |
+| `addProductLink` | Updated to `'Add Products'` (plural — UI changed) |
+| `descriptionInput` | Updated to `nth(2)` (was `nth(1)`) |
+| `submitProductForm()` | Now verifies `'Unsaved Changes'` is visible before clicking Create |
+| `createProduct()` | Now requires `attribute` field; `weightUnit` and `dimensionUnit` are optional (default kg/cm) |
+
+#### `tests/vendor/productCreate.spec.ts` — Updated
+
+All hardcoded test data replaced with `SeedData` values:
+- `SeedData.product.name` / `SeedData.product.price`
+- `SeedData.category.name` / `SeedData.brand.name` / `SeedData.collection.name`
+- `SeedData.attribute.name` (= `'Automation Size'` — must be created by `seedData.spec.ts` first)
+
+#### `pages/admin/customerManagementPage.ts` — Password Locator Fix
+
+The Add Customer modal password field has a placeholder `********` (literal asterisks), not `'Password'`.  
+Fixed locators:
+- `createPasswordInput`: `getByRole('textbox', { name: '********' })`
+- `createConfirmPasswordInput`: `getByRole('textbox', { name: 'Confirm Password' })`
+
+`createCustomer()` now fills BOTH password + confirm password fields when `password` is provided.
 
 ---

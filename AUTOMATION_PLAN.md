@@ -42,7 +42,7 @@ pages/
 │   └── customerManagementPage.ts       ✅ Done  (+ password support in createCustomer)
 ├── vendor/
 │   ├── vendorAuthPage.ts               ✅ Done
-│   └── productCreatePage.ts            ✅ Done
+│   └── productCreatePage.ts            ✅ Done  (+ addAttribute, weight/dim units, brand/collection React Select fix)
 ├── customer/                           ✅ Done — Phase 2 complete
 │   ├── customerAuthPage.ts             ✅ Done
 │   ├── storefrontPage.ts               ✅ Done
@@ -76,7 +76,7 @@ tests/
 │   └── deleteProduct.spec.ts           ✅ Done
 ├── vendor/
 │   ├── vendorLogin.spec.ts             ✅ Done
-│   └── productCreate.spec.ts           ✅ Done
+│   └── productCreate.spec.ts           ✅ Done  (uses SeedData for all fixed data — brand/category/collection/attribute/product)
 ├── customer/                           ✅ Done — Phase 2 complete
 │   ├── customerLogin.spec.ts           ✅ Done
 │   ├── browseProducts.spec.ts          ✅ Done
@@ -333,8 +333,10 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2026 | `auth.setupUsers.ts` — simplified: switched from `browser.newContext()` pattern to simple `page` fixture (same as admin) |
 | Apr 2026 | `playwright.config.ts` — removed ALL `dependencies` from projects; no forced re-runs; auth JSON files handle sessions; setup steps run manually once |
 | Apr 2026 | `customerManagementPage.ts` — fixed `createPasswordInput` locator: `getByRole('textbox', { name: 'Password', exact: true })` → `getByRole('textbox', { name: '********' })` (actual placeholder); added `createConfirmPasswordInput`; `createCustomer()` now fills both password fields |
+| Apr 2026 | `pages/vendor/productCreatePage.ts` — added `addAttribute()` method; `fillDimensions()` now selects weight unit + dimension unit; brand/collection use React Select fill-to-search pattern; `addProductLink` updated to `'Add Products'` (plural); `descriptionInput` updated to `nth(2)`; `createProduct()` now requires `attribute` field |
+| Apr 2026 | `tests/vendor/productCreate.spec.ts` — all hardcoded data replaced with `SeedData.*` (brand, category, collection, attribute, product name/price) |
 
 ---
 
 **Last Updated:** April 2026 (Session 6)  
-**Current Phase:** Phase 2 ✅ Complete — auth architecture stabilized — moving to Phase 3 (Subscription Plans & Commission)
+**Current Phase:** Phase 2 ✅ Complete — auth architecture stabilized + vendor product creation updated — moving to Phase 3 (Subscription Plans & Commission)
