@@ -5,71 +5,84 @@ import { Urls } from '../../utils/testData';
 export class CustomerAuthPage {
     readonly page: Page;
 
-    // Login form
-    private readonly emailInput: Locator;
-    private readonly passwordInput: Locator;
-    private readonly signInButton: Locator;
-    private readonly privacyPolicyButton: Locator;
+    // Login form — confirmed from codegen
+    readonly loginLink: Locator;
+    readonly emailInput: Locator;
+    readonly passwordInput: Locator;
+    readonly signInButton: Locator;
 
     // Post-login verification
-    private readonly accountHeading: Locator;
+    readonly loginSuccessMessage: Locator;
+    readonly accountButton: Locator;       // "Hello Journey" button — opens account dropdown
 
-    // Logout
-    private readonly logoutLink: Locator;
+    // Logout — inside account dropdown
+    readonly signOutLink: Locator;
 
     // Post-logout verification
-    private readonly loginFormHeading: Locator;
+    readonly pleaseLoginText: Locator;
 
     constructor(page: Page) {
         this.page = page;
 
-        // Login form — matches locators from auth.setup.ts (custom React login)
-        this.emailInput   = page.locator('#reg-email');
-        this.passwordInput = page.locator('#login-password');
-        this.signInButton = page.locator("//button[normalize-space(text())='Sign in']");
-        this.privacyPolicyButton = page.locator("(//button[@type='button'][text()='Accept'])[1]");
+        // Login page — accessed via Login link on homepage
+        this.loginLink    = page.getByRole('link', { name: 'Login' });
+        this.emailInput   = page.getByRole('textbox', { name: 'Email' });
+        this.passwordInput = page.getByRole('textbox', { name: 'Password' });
+        this.signInButton = page.getByRole('button', { name: 'Sign in', exact: true });
 
-        // Customer account dashboard
-        this.accountHeading = page.getByRole('heading', { name: /my account|account/i }).first();
+        // After login
+        this.loginSuccessMessage = page.getByText('Login Successful');
+        this.accountButton       = page.getByRole('button', { name: /Hello/i }); // "Hello Journey"
 
-        // Logout
-        this.logoutLink = page.getByRole('link', { name: /log out|logout|sign out/i }).first();
+        // Logout dropdown
+        this.signOutLink = page.getByRole('link', { name: 'Sign out' });
 
-        // After logout — login form is visible again
-        this.loginFormHeading = page.locator('#reg-email');
+        // After logout
+        this.pleaseLoginText = page.getByText('Please Login');
     }
 
+    /**
+     * Navigate to the storefront and click the Login link
+     */
     async navigateToLogin() {
-        await this.page.goto(`${Urls.customerUrl}/login`);
-        await this.page.waitForLoadState('networkidle');
+        await this.page.goto(Urls.customerUrl + '/', { timeout: 30000 });
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.loginLink.click();
         await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /**
+     * Login with email and password
+     */
     async login(email: string, password: string) {
+        await this.emailInput.waitFor({ state: 'visible', timeout: 15000 });
         await this.emailInput.fill(email);
         await this.passwordInput.fill(password);
-
-        // Accept Privacy Policy if visible
-        const privacyVisible = await this.privacyPolicyButton.isVisible({ timeout: 2000 }).catch(() => false);
-        if (privacyVisible) await this.privacyPolicyButton.click();
-
         await this.signInButton.click();
-        await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /**
+     * Logout via the account dropdown
+     */
     async logout() {
-        await this.logoutLink.click();
-        await this.page.waitForLoadState('networkidle');
+        await this.accountButton.click();
+        await this.signOutLink.click();
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /**
+     * Verify customer is logged in — toast + account button visible
+     */
     async verifyLoggedIn() {
-        // After login, URL redirects to /customers/account
-        await expect(this.page).toHaveURL(/\/customers\/account/, { timeout: 15000 });
+        await expect(this.loginSuccessMessage).toBeVisible({ timeout: 10000 });
+        await expect(this.accountButton).toBeVisible({ timeout: 10000 });
     }
 
+    /**
+     * Verify customer is logged out — "Please Login" text visible
+     */
     async verifyLoggedOut() {
-        // After logout, login form (#reg-email) is visible again
-        await expect(this.loginFormHeading).toBeVisible({ timeout: 10000 });
+        await expect(this.pleaseLoginText).toBeVisible({ timeout: 10000 });
     }
 }
