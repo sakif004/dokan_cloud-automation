@@ -1,13 +1,13 @@
-import { test, expect } from '../fixtures/auth.fixtures';
+import { test } from '../fixtures/auth.fixtures';
 import { StorefrontPage } from '../../pages/customer/storefrontPage';
 import { ProductDetailPage } from '../../pages/customer/productDetailPage';
 import { SeedData } from '../../utils/testData';
 
 /**
- * Browse & Search tests.
- * Depends on vendorJourney project having created SeedData.product.name first.
+ * Browse & Search tests — serial so cases run in order (CBR001 → CBR004).
+ * Depends on vendorJourney having created SeedData.product.name first.
  */
-test.describe('Customer Browse & Search', () => {
+test.describe.serial('Customer Browse & Search', () => {
 
     // CBR001: Navigate to shop and search for the seed product
     test('CBR001: searchProduct', async ({ customerPage }) => {

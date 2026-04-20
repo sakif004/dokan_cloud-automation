@@ -2,103 +2,114 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { Urls } from '../../utils/testData';
 
+/**
+ * FlyCommerce storefront checkout — multi-step wizard (Contact/Shipping → Orders → Payment).
+ * Locators match Playwright codegen against amazonbd2.flycom.shop.
+ */
 export class CheckoutPage {
     readonly page: Page;
 
-    // Billing / contact fields (WooCommerce standard field names)
-    private readonly firstNameInput: Locator;
-    private readonly lastNameInput: Locator;
-    private readonly addressInput: Locator;
-    private readonly cityInput: Locator;
-    private readonly phoneInput: Locator;
-    private readonly emailInput: Locator;
-
-    // Payment method
-    private readonly cashOnDeliveryRadio: Locator;
-
-    // Place Order
     private readonly placeOrderButton: Locator;
-
-    // Order confirmation
-    private readonly orderConfirmationHeading: Locator;
-    private readonly orderNumber: Locator;
 
     constructor(page: Page) {
         this.page = page;
 
-        // Billing fields — WooCommerce uses id="billing_*" or getByLabel
-        this.firstNameInput = page.locator('#billing_first_name, [name="billing_first_name"]')
-            .or(page.getByLabel(/first name/i)).first();
-        this.lastNameInput  = page.locator('#billing_last_name,  [name="billing_last_name"]')
-            .or(page.getByLabel(/last name/i)).first();
-        this.addressInput   = page.locator('#billing_address_1,  [name="billing_address_1"]')
-            .or(page.getByLabel(/street address/i)).first();
-        this.cityInput      = page.locator('#billing_city,       [name="billing_city"]')
-            .or(page.getByLabel(/town|city/i)).first();
-        this.phoneInput     = page.locator('#billing_phone,      [name="billing_phone"]')
-            .or(page.getByLabel(/phone/i)).first();
-        this.emailInput     = page.locator('#billing_email,      [name="billing_email"]')
-            .or(page.getByLabel(/email/i)).first();
-
-        // Cash on Delivery — configured in setupGuide
-        this.cashOnDeliveryRadio = page.locator('input[value="cod"]')
-            .or(page.getByLabel(/cash on delivery|cod/i)).first();
-
-        // Place Order button
-        this.placeOrderButton = page.getByRole('button', { name: /place order/i }).first();
-
-        // Confirmation page
-        this.orderConfirmationHeading = page.getByRole('heading', { name: /order received|thank you|order confirmed/i }).first();
-        // WooCommerce standard order number wrapper
-        this.orderNumber = page.locator('.woocommerce-order-overview__order strong, [class*="order-number"]').first();
+        this.placeOrderButton = page.getByRole('button', { name: 'Place Order' });
     }
 
     async navigateToCheckout() {
         await this.page.goto(`${Urls.customerUrl}/checkout`);
-        await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
     }
 
-    async fillContactInfo(data: { email: string; phone: string }) {
-        await this.emailInput.fill(data.email);
-        await this.phoneInput.fill(data.phone);
+    /**
+     * Assert logged-in contact block shows the customer email (session from storage state).
+     */
+    async verifyContactInformationVisible(email: string) {
+        await expect(this.page.getByRole('heading', { name: 'Contact information' })).toBeVisible({
+            timeout: 15000,
+        });
+        await expect(this.page.getByText(email)).toBeVisible();
     }
 
-    async fillShippingAddress(data: {
+    /**
+     * Shipping step: name, country, address (with autocomplete), phone — then Continue to Orders.
+     */
+    async fillShippingStep(data: {
         firstName: string;
-        lastName:  string;
-        address:   string;
-        city:      string;
+        lastName: string;
+        /** e.g. "bangladesh" to filter the country combobox */
+        countrySearch: string;
+        /** e.g. "Bangladesh" — option label */
+        countryOption: string;
+        /** First line; autocomplete may need ArrowDown + Enter (Dhaka marketplace). */
+        addressLine: string;
+        phone: string;
     }) {
-        await this.firstNameInput.fill(data.firstName);
-        await this.lastNameInput.fill(data.lastName);
-        await this.addressInput.fill(data.address);
-        await this.cityInput.fill(data.city);
-    }
+        await expect(this.page.getByRole('heading', { name: 'Shipping Address' })).toBeVisible({
+            timeout: 15000,
+        });
 
-    async selectPaymentMethod(method: 'cod' | string = 'cod') {
-        if (method === 'cod') {
-            // Cash on Delivery
-            const visible = await this.cashOnDeliveryRadio.isVisible({ timeout: 5000 }).catch(() => false);
-            if (visible) await this.cashOnDeliveryRadio.click();
-        } else {
-            // Generic: click the radio/label matching the method name
-            await this.page.getByLabel(new RegExp(method, 'i')).first().click();
-        }
-    }
+        await this.page.getByRole('textbox', { name: 'First Name *' }).fill(data.firstName);
+        await this.page.getByRole('textbox', { name: 'Last Name *' }).fill(data.lastName);
 
-    async placeOrder() {
-        await this.placeOrderButton.click();
-        await this.page.waitForLoadState('networkidle');
+        await this.page.getByText('Country *Select Country').click();
+        await this.page.getByRole('combobox', { name: 'Country *' }).fill(data.countrySearch);
+        await this.page.getByRole('option', { name: data.countryOption }).click();
+
+        const addressInput = this.page.getByRole('textbox', { name: 'Address *' });
+        await addressInput.fill(data.addressLine);
+        // Wait for autocomplete suggestions to appear
+        await this.page.waitForTimeout(2000);
+        await addressInput.press('ArrowDown');
+        await this.page.waitForTimeout(1000);
+        await addressInput.press('Enter');
+        await this.page.waitForTimeout(2000);
+
+        await this.page.getByRole('textbox', { name: 'Phone *' }).fill(data.phone);
+
+        await this.page.getByRole('button', { name: 'Continue to Orders' }).click();
         await this.page.waitForLoadState('domcontentloaded');
     }
 
-    async verifyOrderConfirmation() {
-        await expect(this.orderConfirmationHeading).toBeVisible({ timeout: 30000 });
+    /** Orders step: shipping method → Continue to Payment */
+    async selectShippingAndContinueToPayment() {
+        await expect(this.page.getByRole('heading', { name: 'Orders' })).toBeVisible({ timeout: 15000 });
+        await this.page.getByRole('radio', { name: 'Free Estimated Delivery:' }).click();
+        await this.page.getByRole('button', { name: 'Continue to Payment' }).click();
+        await this.page.waitForLoadState('domcontentloaded');
     }
 
+    /** Payment: COD → Place Order */
+    async selectCashOnDeliveryAndPlaceOrder() {
+        await expect(this.page.getByRole('heading', { name: 'Payment' })).toBeVisible({ timeout: 15000 });
+        await this.page.getByText('Cash On Delivery').click();
+
+        await expect(this.page.getByRole('heading', { name: 'Order Summary' })).toBeVisible();
+        await expect(this.placeOrderButton).toBeVisible();
+
+        await this.placeOrderButton.click();
+        await this.page.waitForLoadState('domcontentloaded');
+    }
+
+    async verifyOrderReceived() {
+        await expect(this.page.getByText('Your order is received')).toBeVisible({ timeout: 60000 });
+    }
+
+    /**
+     * Best-effort order reference from confirmation UI (structure may vary).
+     */
     async getOrderId(): Promise<string> {
-        await expect(this.orderNumber).toBeVisible({ timeout: 15000 });
-        return (await this.orderNumber.textContent()) ?? '';
+        const main = this.page.getByRole('main');
+        const text = await main.textContent().catch(() => '');
+        const match = text?.match(/#?\s*(\d{4,})/);
+        return match?.[1] ?? '';
+    }
+
+    async goToMyOrders() {
+        await this.page.getByRole('link', { name: 'My Orders' }).click();
+        await expect(this.page.getByRole('heading', { name: 'My Orders' })).toBeVisible({
+            timeout: 15000,
+        });
     }
 }

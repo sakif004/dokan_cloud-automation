@@ -126,6 +126,8 @@ export default defineConfig({
                 '**/customer/addToCart.spec.ts',
                 '**/customer/checkout.spec.ts',
             ],
+            /** Fixture (goto + waits) + storefront steps share the default 30s otherwise */
+            timeout: 90_000,
             use: { ...devices['Desktop Chrome'] },
         },
 

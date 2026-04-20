@@ -4,57 +4,76 @@ import { expect, Locator, Page } from '@playwright/test';
 export class ProductDetailPage {
     readonly page: Page;
 
-    // Product info
-    private readonly productTitle: Locator;
-    private readonly productPrice: Locator;
+    // Product info — confirmed from codegen
+    /** Primary product name — scoped (page also has h3 "Related Products") */
+    readonly productTitle: Locator;
+    readonly quantityDecrease: Locator; // "−" button
+    readonly quantityInput: Locator;    // spinbutton
+    readonly quantityIncrease: Locator; // "+" button
+    readonly addToCartButton: Locator;
 
-    // Quantity + Add to Cart
-    private readonly quantityInput: Locator;
-    private readonly addToCartButton: Locator;
-
-    // Success feedback
-    private readonly cartSuccessMessage: Locator;
-    private readonly viewCartLink: Locator;
+    /** Add-to-cart success modal (Headless UI dialog) */
+    readonly addedToCartHeading: Locator;
+    readonly goToCartModalButton: Locator;
+    readonly continueShoppingModalButton: Locator;
 
     constructor(page: Page) {
         this.page = page;
 
-        // Product heading on the detail page
-        this.productTitle = page.getByRole('heading', { level: 1 }).first();
-        this.productPrice = page.locator('.price, [class*="product-price"]').first();
+        // PDP has multiple level-3 headings (product title + "Related Products"); use product-title h3
+        this.productTitle = page.locator('h3.product-title');
+        this.quantityDecrease = page.getByRole('button', { name: '−' });
+        this.quantityInput = page.getByRole('spinbutton');             // quantity field
+        this.quantityIncrease = page.getByRole('button', { name: '+' });
+        this.addToCartButton = page.getByRole('button', { name: 'Add to Cart' });
 
-        // Quantity — WooCommerce standard input name
-        this.quantityInput = page.locator('input[name="quantity"]').first();
-
-        // Add to Cart — button with role=button or type=submit
-        this.addToCartButton = page.getByRole('button', { name: /add to cart/i }).first();
-
-        // Success state — message or cart count
-        this.cartSuccessMessage = page.locator('.woocommerce-message, [class*="cart-success"], [class*="added-to-cart"]').first();
-        this.viewCartLink = page.getByRole('link', { name: /view cart/i }).first();
+        // Add-to-cart modal (codegen: heading "Successfully added to your…", buttons Continue Shopping / Go to Cart)
+        this.addedToCartHeading = page.getByRole('heading', { name: /Successfully added to your/i });
+        this.goToCartModalButton = page
+            .getByRole('dialog')
+            .getByRole('button', { name: 'Go to Cart' })
+            .or(page.locator('[id^="headlessui-dialog"]').getByRole('button', { name: 'Go to Cart' }));
+        this.continueShoppingModalButton = page
+            .getByRole('dialog')
+            .getByRole('button', { name: 'Continue Shopping' })
+            .or(page.locator('[id^="headlessui-dialog"]').getByRole('button', { name: 'Continue Shopping' }));
     }
 
+    /**
+     * Set quantity using the +/− buttons or by filling the spinbutton directly
+     */
     async setQuantity(qty: number) {
         await this.quantityInput.fill(String(qty));
     }
 
+    /**
+     * Click Add to Cart
+     */
     async addToCart() {
         await this.addToCartButton.click();
         await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
     }
 
+    /**
+     * Verify the post–add-to-cart success modal is visible
+     */
     async verifyAddedToCart() {
-        // Either a success message appears or a "View Cart" link becomes visible
-        const messageVisible = await this.cartSuccessMessage.isVisible({ timeout: 5000 }).catch(() => false);
-        const viewCartVisible = await this.viewCartLink.isVisible({ timeout: 5000 }).catch(() => false);
-
-        if (!messageVisible && !viewCartVisible) {
-            // Fallback: assert the add-to-cart button has changed state
-            await expect(this.addToCartButton).toBeVisible({ timeout: 5000 });
-        }
+        await expect(this.addedToCartHeading).toBeVisible({ timeout: 10000 });
     }
 
+    /**
+     * Close the success modal by going to the cart page (same as codegen "Go to Cart")
+     */
+    async goToCartFromModal() {
+        await this.goToCartModalButton.click();
+        await this.page.waitForLoadState('domcontentloaded');
+    }
+
+    /**
+     * Verify the product title on the detail page
+     */
     async verifyProductTitle(name: string) {
         await expect(this.productTitle).toContainText(name, { timeout: 10000 });
     }

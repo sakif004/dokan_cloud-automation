@@ -133,11 +133,8 @@ export const test = base.extend<AuthFixtures>({
         const context = await browser.newContext({ storageState: authFile });
         const page    = await context.newPage();
 
-        // Navigate to storefront to confirm session is active
-        await page.goto(Urls.customerUrl);
-        await page.waitForLoadState('networkidle');
-        await page.waitForLoadState('domcontentloaded');
-        await page.waitForTimeout(2000);
+        // Navigate to storefront to confirm session is active (avoid networkidle — burns test timeout on SPAs)
+        await page.goto(Urls.customerUrl, { waitUntil: 'domcontentloaded' });
 
         console.log('✅ Customer fixture ready');
         await use(new CustomerPage(page, context));
