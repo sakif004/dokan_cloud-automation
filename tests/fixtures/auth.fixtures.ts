@@ -162,7 +162,7 @@ export const test = base.extend<AuthFixtures>({
         if (!fs.existsSync(authFile)) {
             throw new Error(
                 'FlyCommerce auth file not found: playwright/.auth/flycommerce.json\n' +
-                'Run: npx playwright test --project=setup\n' +
+                'Run: npx playwright test --project=setupFlycommerceAuth\n' +
                 'Make sure DOKAN_CLOUD_EMAIL and DOKAN_CLOUD_PASSWORD are set in .env'
             );
         }

@@ -15,9 +15,9 @@ import { Urls } from '../utils/testData';
  *   playwright/.auth/customer.json
  *
  * Run order:
- *   setup (admin.json + flycommerce.json)
- *     → adminSeedSetup (creates vendor + customer accounts)
- *       → setupAuth (this file — saves vendor.json + customer.json)
+ *   setupFlycommerceAuth -> marketplaceSetup -> setupMarketplaceAdminAuth
+ *     -> marketplaceAdminSetupGuide -> adminSeedSetup
+ *       -> setupAuth (this file — saves vendor.json + customer.json)
  */
 
 // ================================================================================================

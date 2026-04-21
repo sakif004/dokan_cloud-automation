@@ -13,80 +13,106 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  * Playwright Configuration — FlyCommerce Automation
  * ================================================================================================
  *
- * SETUP (run once manually on a fresh marketplace, in order):
+ * FINAL JOURNEY (manual phase order):
  *
- *   npx playwright test --project=setup
- *     → Saves admin.json + flycommerce.json
+ *   Phase 1A: npx playwright test --project=setupFlycommerceAuth
+ *     → Saves flycommerce.json (SuperAdmin/AppAdmin on app.flycommerce.com)
  *
- *   npx playwright test --project=adminSeedSetup --no-deps
- *     → Admin creates seed data + journey vendor + journey customer accounts
+ *   Phase 1B: npx playwright test --project=marketplaceSetup
+ *     → Creates marketplace from FlyCommerce app
  *
- *   npx playwright test --project=setupAuth --no-deps
- *     → Saves vendor.json + customer.json (accounts now exist)
+ *   Phase 1C: npx playwright test --project=setupMarketplaceAdminAuth
+ *     → Saves admin.json for the newly created marketplace admin
  *
- * After the above 3 steps, all .auth JSON files exist and any project can be run freely:
+ *   Phase 1D: npx playwright test --project=marketplaceAdminSetupGuide
+ *     → Completes setup guide as marketplace admin
  *
- *   npx playwright test --project=adminCRUD
- *   npx playwright test --project=vendorJourney
- *   npx playwright test --project=customerJourney
- *   etc.
+ *   Phase 2: npx playwright test --project=adminSeedSetup --no-deps
+ *     → Creates Brand, Category, Collection, Attribute, journey Vendor + Customer
  *
- * No dependencies are set on test projects — auth JSON files handle session reuse.
+ *   Phase 3: npx playwright test --project=setupAuth --no-deps
+ *     → Saves vendor.json + customer.json
  *
- * See https://playwright.dev/docs/test-configuration.
+ *   Phase 4: npx playwright test --project=vendorJourney
+ *     → Vendor creates seed product
+ *
+ *   Phase 5: npx playwright test --project=customerJourney
+ *     → Customer completes checkout (COD)
+ *
+ * No dependencies are set on projects — run phases explicitly in order.
  */
 export default defineConfig({
     testDir: './tests',
-
-    /* Run tests in files in parallel within each project */
     fullyParallel: true,
-
-    /* Fail the build on CI if you accidentally left test.only in the source code */
     forbidOnly: !!process.env.CI,
-
-    /* Retry on CI only */
     retries: process.env.CI ? 2 : 0,
-
-    /* Workers: 1 on CI to avoid resource contention; auto on local */
     workers: process.env.CI ? 1 : undefined,
-
-    /* HTML reporter */
     reporter: 'html',
 
-    /* Shared settings for all projects */
     use: {
         trace: 'on-first-retry',
     },
 
     projects: [
-
-        // ── Phase 1: Admin + FlyCommerce auth ─────────────────────────────────
-        // Vendor/customer auth gracefully skipped — accounts don't exist yet.
+        // ── Phase 1A: FlyCommerce App Admin auth ─────────────────────────────
         {
-            name: 'setup',
+            name: 'setupFlycommerceAuth',
             testMatch: '**/auth.setup.ts',
         },
 
-        // ── One-time setup: seed data (run manually, no-deps) ─────────────────
-        // Creates permanent fixtures: Brand, Category, Collection, Attribute,
-        // journey Vendor account, journey Customer account.
-        // Run once: npx playwright test --project=adminSeedSetup --no-deps
+        // ── Phase 1B: Marketplace onboarding from FlyCommerce app ────────────
+        {
+            name: 'marketplaceSetup',
+            testMatch: '**/app_store/marketplaceOnboarding.spec.ts',
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+        // ── Phase 1C: Marketplace Admin auth (after marketplace exists) ──────
+        {
+            name: 'setupMarketplaceAdminAuth',
+            testMatch: '**/auth.setupAdmin.ts',
+        },
+
+        // ── Phase 1D: Marketplace admin setup guide ───────────────────────────
+        {
+            name: 'marketplaceAdminSetupGuide',
+            testMatch: '**/admin/setupGuide.spec.ts',
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+        // ── Phase 2: One-time seed data + journey accounts ────────────────────
         {
             name: 'adminSeedSetup',
             testMatch: '**/admin/seedData.spec.ts',
             use: { ...devices['Desktop Chrome'] },
         },
 
-        // ── One-time setup: vendor + customer auth (run manually, no-deps) ─────
-        // Saves vendor.json + customer.json after accounts are created by adminSeedSetup.
-        // Run once: npx playwright test --project=setupAuth --no-deps
+        // ── Phase 3: Vendor + Customer auth ───────────────────────────────────
         {
             name: 'setupAuth',
             testMatch: '**/auth.setupUsers.ts',
         },
 
-        // ── Admin CRUD tests ───────────────────────────────────────────────────
-        // Uses admin.json. Run freely after setup.
+        // ── Phase 4: Vendor product creation ──────────────────────────────────
+        {
+            name: 'vendorJourney',
+            testMatch: [
+                '**/vendor/productCreate.spec.ts',
+            ],
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+        // ── Phase 5: Customer checkout journey ────────────────────────────────
+        {
+            name: 'customerJourney',
+            testMatch: [
+                '**/customer/checkout.spec.ts',
+            ],
+            timeout: 90_000,
+            use: { ...devices['Desktop Chrome'] },
+        },
+
+        // ── Optional admin CRUD suites (outside final journey) ────────────────
         {
             name: 'adminCRUD',
             testMatch: [
@@ -100,42 +126,14 @@ export default defineConfig({
                 '**/admin/productAttribute.spec.ts',
                 '**/admin/vendorCreate.spec.ts',
                 '**/admin/customerManagement.spec.ts',
-                '**/admin/setupGuide.spec.ts',
             ],
             use: { ...devices['Desktop Chrome'] },
         },
 
-        // ── Vendor journey — login + create seed product ───────────────────────
-        // Uses vendor.json. Run after setupAuth.
-        {
-            name: 'vendorJourney',
-            testMatch: [
-                '**/vendor/vendorLogin.spec.ts',
-                '**/vendor/productCreate.spec.ts',
-            ],
-            use: { ...devices['Desktop Chrome'] },
-        },
-
-        // ── Customer journey — browse, cart, checkout ──────────────────────────
-        // Uses customer.json. Run after vendorJourney (product must exist).
-        {
-            name: 'customerJourney',
-            testMatch: [
-                '**/customer/customerLogin.spec.ts',
-                '**/customer/browseProducts.spec.ts',
-                '**/customer/addToCart.spec.ts',
-                '**/customer/checkout.spec.ts',
-            ],
-            /** Fixture (goto + waits) + storefront steps share the default 30s otherwise */
-            timeout: 90_000,
-            use: { ...devices['Desktop Chrome'] },
-        },
-
-        // ── Admin verify — confirm orders ──────────────────────────────────────
         {
             name: 'adminVerify',
             testMatch: [
-                // '**/admin/orderManagement.spec.ts',  ← add when created
+                // '**/admin/orderManagement.spec.ts',
             ],
             use: { ...devices['Desktop Chrome'] },
         },
@@ -149,15 +147,5 @@ export default defineConfig({
             ],
             use: { ...devices['Desktop Chrome'] },
         },
-
-        // ── Marketplace onboarding (standalone — run before any other project) ─
-        // Creates a new marketplace on app.flycommerce.com.
-        // Run once: npx playwright test --project=marketplaceSetup
-        {
-            name: 'marketplaceSetup',
-            testMatch: '**/app_store/marketplaceOnboarding.spec.ts',
-            use: { ...devices['Desktop Chrome'] },
-        },
-
     ],
 });

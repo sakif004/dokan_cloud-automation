@@ -64,8 +64,15 @@ npx playwright install
 cp .env.example .env
 # Edit .env with your credentials
 
-# 3. Setup authentication
-npx playwright test --project=setup
+# 3. Run final journey phases (in order)
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 
 # 4. Run tests
 npx playwright test
@@ -93,7 +100,7 @@ My Dokan Automation/
 │   ├── vendor/                         # Vendor role pages (main site)
 │   │   ├── vendorAuthPage.ts           # Vendor login
 │   │   └── productCreatePage.ts        # Product creation
-│   ├── app_store/                      # Dokan Cloud pages (app.dokan.co)
+│   ├── app_store/                      # FlyCommerce Cloud pages (app.flycommerce.com)
 │   │   ├── dokanCloudLoginPage.ts      # Dokan Cloud login
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation flow
 │   ├── common/                         # Shared helpers
@@ -225,32 +232,38 @@ The project uses a **multi-project setup** in `playwright.config.ts`:
 
 | Project | Purpose | Runs |
 |---------|---------|------|
-| **setup** | Phase 1 auth | `admin.json` + `flycommerce.json` |
+| **setupFlycommerceAuth** | Phase 1A auth (SuperAdmin/AppAdmin) | `flycommerce.json` |
+| **marketplaceSetup** | Phase 1B marketplace creation | app_store onboarding flow |
+| **setupMarketplaceAdminAuth** | Phase 1C auth (Marketplace admin) | `admin.json` |
+| **marketplaceAdminSetupGuide** | Phase 1D setup guide | `setupGuide.spec.ts` |
 | **adminSeedSetup** | Seed data + journey vendor/customer accounts | `seedData.spec.ts` (run once on fresh env) |
 | **setupAuth** | Phase 3 auth | `vendor.json` + `customer.json` |
 | **adminCRUD** | Admin specs | Uses `admin.json` |
-| **vendorJourney** | Vendor login + seed product | Uses `vendor.json` |
-| **customerJourney** | Customer storefront (login, browse, add to cart, checkout) | Uses `customer.json` |
+| **vendorJourney** | Vendor product creation | Uses `vendor.json` |
+| **customerJourney** | Customer checkout (COD) | Uses `customer.json` |
 | **cleanup** | Deletes product + related | Uses `admin.json` |
-| **marketplaceSetup** | Marketplace onboarding on FlyCommerce Cloud | Standalone |
 
 ---
 
 ## 🚀 Running Tests
 
-### 1️⃣ Setup Authentication (First Time)
+### 1️⃣ Setup & Auth (First Time)
 
-**Run this before your first test:**
+**Run these phases in order:**
 
 ```bash
-npx playwright test --project=setup
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
 ```
 
-Phase 1 (`--project=setup`) writes `playwright/.auth/`:
-- ✅ `admin.json` — Admin session  
-- ✅ `flycommerce.json` — FlyCommerce Cloud app session  
-
-After `adminSeedSetup`, run `--project=setupAuth` to add `vendor.json` and `customer.json`.
+Auth files in `playwright/.auth/` are created in stages:
+- ✅ `flycommerce.json` by `setupFlycommerceAuth`  
+- ✅ `admin.json` by `setupMarketplaceAdminAuth`  
+- ✅ `vendor.json` + `customer.json` by `setupAuth`
 
 **When to re-run:**
 - When credentials change in `.env`
@@ -268,16 +281,18 @@ npx playwright test
 
 #### Run Specific Project
 ```bash
-# Marketplace onboarding (FlyCommerce Cloud)
+# Phase 1A/1B/1C/1D
+npx playwright test --project=setupFlycommerceAuth
 npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
 
-# Seed data + journey accounts (run once when needed)
+# Phase 2/3
 npx playwright test --project=adminSeedSetup --no-deps
-
-# Vendor + customer auth after seeds exist
 npx playwright test --project=setupAuth --no-deps
 
-# Customer storefront journey
+# Phase 4/5
+npx playwright test --project=vendorJourney
 npx playwright test --project=customerJourney
 ```
 
@@ -351,16 +366,13 @@ npx playwright show-trace trace.zip
 ### 5️⃣ Full E2E Workflow Example
 
 ```bash
-# One-time marketplace + seed + auth (adjust order for your environment)
-
-npx playwright test --project=setup
+# Final journey (as implemented)
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
 npx playwright test --project=adminSeedSetup --no-deps
 npx playwright test --project=setupAuth --no-deps
-
-# Optional: marketplace onboarding on FlyCommerce Cloud
-npx playwright test --project=marketplaceSetup
-
-# Journeys
 npx playwright test --project=vendorJourney
 npx playwright test --project=customerJourney
 
@@ -519,7 +531,7 @@ await page.goto('https://example.com/admin/products'); // DON'T DO THIS
 
 | Test File | Purpose | Coverage |
 |-----------|---------|----------|
-| `marketplaceOnboarding.spec.ts` | Marketplace creation | Complete onboarding flow on app.dokan.co |
+| `marketplaceOnboarding.spec.ts` | Marketplace creation | Complete onboarding flow on app.flycommerce.com |
 
 ### E2E Tests (`tests/e2e/`)
 
@@ -576,7 +588,8 @@ Requires `customer.json` and a seed product from `vendorJourney` (`SeedData.prod
 rm -rf playwright/.auth/*.json
 
 # Re-authenticate
-npx playwright test --project=setup
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=setupMarketplaceAdminAuth
 
 # Verify auth files created
 ls -la playwright/.auth/
@@ -591,7 +604,7 @@ ls -la playwright/.auth/
 **Solution**:
 1. Check if `DOKAN_CLOUD_EMAIL` and `DOKAN_CLOUD_PASSWORD` are set in `.env`
 2. If not needed, this is expected behavior (tests skip gracefully)
-3. If needed, add credentials and run: `npx playwright test --project=setup`
+3. If needed, add credentials and run: `npx playwright test --project=setupFlycommerceAuth`
 
 ---
 

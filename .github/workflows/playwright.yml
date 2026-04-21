@@ -46,10 +46,21 @@ jobs:
       - name: Create .auth directory
         run: mkdir -p playwright/.auth
 
-      # ── Phase 1: Admin + FlyCommerce auth ────────────────────────────────────
-      # Saves admin.json + flycommerce.json
-      - name: Phase 1 — Admin + FlyCommerce auth
-        run: npx playwright test --project=setup
+      # ── Phase 1A: FlyCommerce app admin auth ─────────────────────────────────
+      - name: Phase 1A — FlyCommerce auth
+        run: npx playwright test --project=setupFlycommerceAuth
+
+      # ── Phase 1B: Marketplace onboarding (creates marketplace admin) ─────────
+      - name: Phase 1B — Marketplace onboarding
+        run: npx playwright test --project=marketplaceSetup
+
+      # ── Phase 1C: Marketplace admin auth (after marketplace exists) ──────────
+      - name: Phase 1C — Marketplace admin auth
+        run: npx playwright test --project=setupMarketplaceAdminAuth
+
+      # ── Phase 1D: Marketplace setup guide ─────────────────────────────────────
+      - name: Phase 1D — Marketplace setup guide
+        run: npx playwright test --project=marketplaceAdminSetupGuide
 
       # ── Phase 2: Seed data + journey accounts ─────────────────────────────────
       # Creates Brand, Category, Collection, Attribute, journey Vendor + Customer.
@@ -63,14 +74,12 @@ jobs:
       - name: Phase 3 — Vendor + Customer auth
         run: npx playwright test --project=setupAuth
 
-      # ── Test suites ───────────────────────────────────────────────────────────
-      - name: Run Admin CRUD tests
-        run: npx playwright test --project=adminCRUD
-
-      - name: Run Vendor Journey tests
+      # ── Phase 4: Vendor journey (product creation) ───────────────────────────
+      - name: Run Vendor Journey
         run: npx playwright test --project=vendorJourney
 
-      - name: Run Customer Journey tests
+      # ── Phase 5: Customer checkout journey ────────────────────────────────────
+      - name: Run Customer Journey
         run: npx playwright test --project=customerJourney
 
       # ── Upload HTML report ────────────────────────────────────────────────────

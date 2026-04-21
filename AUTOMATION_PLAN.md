@@ -8,7 +8,7 @@
 
 ## 🏢 Business Context (Quick Summary)
 
-**Dokan** is a multi-tenant SaaS e-commerce platform. Users create **Marketplaces** or **Standalone Stores** via `app.dokan.co`. Each store gets a unique subdomain (e.g. `storename.flycom.shop`).
+**Dokan** is a multi-tenant SaaS e-commerce platform. Users create **Marketplaces** or **Standalone Stores** via `app.flycommerce.com`. Each store gets a unique subdomain (e.g. `storename.flycom.shop`).
 
 **Three roles inside each marketplace:**
 - **Admin** (`/admin`) — configures the marketplace (setup guide, payments, vendors, categories)
@@ -18,7 +18,7 @@
 **Commission model:** Admin creates subscription plans (with commission % + limits) → Vendor purchases a plan during onboarding → commission is applied automatically on sales.
 
 **Two applications being tested:**
-1. `app.dokan.co` — Dokan Cloud (marketplace creation + management)
+1. `app.flycommerce.com` — FlyCommerce Cloud (marketplace creation + management)
 2. `*.flycom.shop` — Individual marketplace subdomain (admin + vendor + customer)
 
 ---
@@ -106,7 +106,8 @@ tests/
 
 | File | Project | Saves |
 |------|---------|-------|
-| `auth.setup.ts` | `setup` | `admin.json` + `flycommerce.json` |
+| `auth.setup.ts` | `setupFlycommerceAuth` | `flycommerce.json` |
+| `auth.setupAdmin.ts` | `setupMarketplaceAdminAuth` | `admin.json` |
 | `auth.setupUsers.ts` | `setupAuth` | `vendor.json` + `customer.json` |
 
 **Login locators:**
@@ -121,24 +122,31 @@ tests/
 
 **No `dependencies` set** — projects run independently using `.auth` JSON files. Run setup steps once manually, then any project can run freely.
 
-**One-time setup order (fresh marketplace):**
+**Final journey setup order (fresh marketplace):**
 ```bash
-npx playwright test --project=setup          # admin.json + flycommerce.json
-npx playwright test --project=adminSeedSetup # seed data + vendor + customer accounts
-npx playwright test --project=setupAuth      # vendor.json + customer.json
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 ```
 
 | Project | Runs | Notes |
 |---------|------|-------|
-| `setup` | `auth.setup.ts` | Admin + FlyCommerce auth only |
+| `setupFlycommerceAuth` | `auth.setup.ts` | FlyCommerce app admin auth |
+| `marketplaceSetup` | `marketplaceOnboarding.spec.ts` | Creates marketplace from app admin |
+| `setupMarketplaceAdminAuth` | `auth.setupAdmin.ts` | Marketplace admin auth (after create) |
+| `marketplaceAdminSetupGuide` | `setupGuide.spec.ts` | Setup guide completion |
 | `adminSeedSetup` | `seedData.spec.ts` | Creates seed fixtures + journey accounts (run once) |
 | `setupAuth` | `auth.setupUsers.ts` | Vendor + Customer auth (run after adminSeedSetup) |
-| `adminCRUD` | CRUD spec files | Uses `admin.json` — run freely |
-| `vendorJourney` | `vendorLogin` + `productCreate` | Uses `vendor.json` |
-| `customerJourney` | login + browse + cart + checkout | Uses `customer.json` |
+| `vendorJourney` | `productCreate.spec.ts` | Uses `vendor.json` |
+| `customerJourney` | `checkout.spec.ts` | Uses `customer.json` + seed product |
+| `adminCRUD` | CRUD spec files | Optional, outside final journey |
 | `adminVerify` | order verification | ⬜ Pending — no tests yet |
 | `cleanup` | delete product + related | Uses `admin.json` |
-| `marketplaceSetup` | `marketplaceOnboarding.spec.ts` | Uses `flycommerce.json` — run manually |
 
 ---
 
@@ -156,7 +164,7 @@ npx playwright test --project=setupAuth      # vendor.json + customer.json
 | 1.4 | Fix `verifyAddressFieldsPopulated` — new `#state` locator | `pages/app_store/marketplaceOnboardingPage.ts` | ✅ Done | `divisionDropdownTrigger` + `#state` |
 | 1.5 | Add "Preview Store" verification in spec | `tests/app_store/marketplaceOnboarding.spec.ts` | ✅ Done | `.flycom.shop` URL pattern check |
 | 1.6 | Verify `setupGuide.spec.ts` locators after rebranding | `pages/admin/setupGuidePage.ts` | ✅ Done | `businessDetailsLink` → `getByRole('tab')`, `brandLink` → `getByRole('tab')`, `saveButton` → `Save Changes` |
-| 1.7 | Verify all admin page locators after rebranding | `pages/admin/*.ts` | ⬜ Pending | Run `adminPreSetup` project and fix failures |
+| 1.7 | Verify all admin page locators after rebranding | `pages/admin/*.ts` | ⬜ Pending | Run `adminSeedSetup` + `adminCRUD` and fix failures |
 | 1.8 | Enable `dependencies` in `playwright.config.ts` | `playwright.config.ts` | ⬜ Pending | Uncomment setup dependencies |
 | 1.9 | Create `.env.example` file | `.env.example` | ⬜ Pending | Template for new team members |
 | 1.10 | Clean up `e2eCreateMarketplace.spec.ts` | `tests/e2e/e2eCreateMarketplace.spec.ts` | ⬜ Pending | Old file, either remove or archive |
@@ -327,7 +335,7 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `pages/customer/` — 5 new POMs: `customerAuthPage`, `storefrontPage`, `productDetailPage`, `cartPage`, `checkoutPage` |
 | Apr 2025 | `tests/customer/` — `customerLogin`, `browseProducts`, `addToCart`, `checkout` |
 | Apr 2026 | Customer storefront POMs + specs updated for **FlyCommerce** UI: cart/`h4` line titles, checkout wizard (Contact → Orders → Payment), add-to-cart modal via **Go to Cart**; `addToCart`/`checkout` slimmed to **1 test each**; `customerJourney` **90s** timeout; `customerPage` fixture uses `domcontentloaded` (no `networkidle` wait in fixture) |
-| Apr 2025 | `playwright.config.ts` — fully rewritten to 8-project dependency chain (setup → adminSeedSetup → setupAuth → adminCRUD/vendorJourney → customerJourney → adminVerify → cleanup) |
+| Apr 2026 | `playwright.config.ts` + workflow aligned to final phase architecture: `setupFlycommerceAuth` → `marketplaceSetup` → `setupMarketplaceAdminAuth` → `marketplaceAdminSetupGuide` → `adminSeedSetup` → `setupAuth` → `vendorJourney` → `customerJourney` |
 | Apr 2026 | **Session 6 — Auth setup fixes + architecture cleanup** |
 | Apr 2026 | `auth.setup.ts` — split into two files: `auth.setup.ts` (admin+flycommerce only) and `auth.setupUsers.ts` (vendor+customer only, Phase 3) |
 | Apr 2026 | `auth.setup.ts` — fixed admin login locators: `#login-email` → `getByRole('textbox', { name: 'Email Address' })` etc. (matches adminAuthPage.ts, works on flycom.shop) |

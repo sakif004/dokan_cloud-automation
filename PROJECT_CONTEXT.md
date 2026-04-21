@@ -86,15 +86,19 @@ test('FlyCommerce test', async ({ flycommercePage }) => {
 });
 ```
 
-### 3. Authentication Setup — Two-File Split
+### 3. Authentication Setup — Three-File Split
 
-Authentication is split across **two files** to match the 3-phase strategy for a fresh marketplace:
+Authentication is split across **three files** to match the real lifecycle:
 
-**`tests/auth.setup.ts`** — Phase 1 (`setup` project):
-- Authenticates **Admin** + **FlyCommerce** only
-- Admin and FlyCommerce accounts always exist, so this always succeeds
-- Saves: `playwright/.auth/admin.json`, `playwright/.auth/flycommerce.json`
-- Run with: `npx playwright test --project=setup`
+**`tests/auth.setup.ts`** — Phase 1A (`setupFlycommerceAuth` project):
+- Authenticates **FlyCommerce SuperAdmin/AppAdmin** only
+- Saves: `playwright/.auth/flycommerce.json`
+- Run with: `npx playwright test --project=setupFlycommerceAuth`
+
+**`tests/auth.setupAdmin.ts`** — Phase 1C (`setupMarketplaceAdminAuth` project):
+- Authenticates **Marketplace Admin** (only valid after marketplace creation)
+- Saves: `playwright/.auth/admin.json`
+- Run with: `npx playwright test --project=setupMarketplaceAdminAuth`
 
 **`tests/auth.setupUsers.ts`** — Phase 3 (`setupAuth` project):
 - Authenticates **Vendor** + **Customer** only
@@ -107,14 +111,18 @@ Authentication is split across **two files** to match the 3-phase strategy for a
 - Customer storefront (`/login`) uses a **different frontend** → `#reg-email`, `#login-password`
 - FlyCommerce app: `getByRole('textbox', { name: 'Enter your email' })`, `getByRole('textbox', { name: 'Write your password' })`
 
-**Full one-time setup flow (fresh marketplace):**
+**Full final-journey flow (fresh marketplace):**
 ```bash
-npx playwright test --project=setup          # admin.json + flycommerce.json
-npx playwright test --project=adminSeedSetup # creates seed data + vendor + customer accounts
-npx playwright test --project=setupAuth      # vendor.json + customer.json
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup
+npx playwright test --project=setupAuth
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 ```
-
-After these 3 steps, all `.auth` JSON files exist and any project can run freely without re-running setup.
+After these phases, all required `.auth` JSON files exist and final customer checkout journey can run.
 
 ---
 
@@ -201,8 +209,9 @@ My Dokan Automation/
 │
 ├── playwright.config.ts                # Playwright configuration
 │   # Projects (no dependencies — run manually in order or freely after setup):
-│   #   setup, adminSeedSetup, setupAuth, adminCRUD, vendorJourney,
-│   #   customerJourney, adminVerify, cleanup, marketplaceSetup
+│   #   setupFlycommerceAuth, marketplaceSetup, setupMarketplaceAdminAuth,
+│   #   marketplaceAdminSetupGuide, adminSeedSetup, setupAuth,
+│   #   vendorJourney, customerJourney, adminCRUD, adminVerify, cleanup
 ├── package.json                        # Dependencies and scripts
 ├── PROJECT_CONTEXT.md                  # This file - comprehensive project documentation
 ├── tsconfig.json                       # TypeScript configuration
@@ -433,8 +442,8 @@ CUSTOMER_URL=https://your-dokan-site.com
 CUSTOMER_EMAIL=customer@example.com
 CUSTOMER_PASSWORD=your_customer_password
 
-# Dokan Cloud Configuration (Optional - for app.dokan.co marketplace creation)
-DOKAN_CLOUD_URL=https://app.dokan.co
+# FlyCommerce Cloud Configuration (Optional - for app.flycommerce.com marketplace creation)
+DOKAN_CLOUD_URL=https://app.flycommerce.com
 DOKAN_CLOUD_EMAIL=your-email@example.com
 DOKAN_CLOUD_PASSWORD=your_password
 ```
@@ -458,51 +467,44 @@ await page.fill('#password', Urls.adminPassword);
 
 ## 🚀 Playwright Configuration
 
-### Project Structure in playwright.config.ts
+### Project Structure in `playwright.config.ts`
 
-The configuration defines several test projects for different test execution stages:
+The configuration now mirrors the real production lifecycle:
 
-#### **1. setup** Project
-- **Purpose**: Authentication setup - creates session files for all roles
+#### **Phase 1A — `setupFlycommerceAuth`**
+- **Purpose**: Authenticate FlyCommerce SuperAdmin/AppAdmin
 - **Runs**: `tests/auth.setup.ts`
-- **Creates**: 
-  - `playwright/.auth/admin.json`
-  - `playwright/.auth/vendor.json`
-  - `playwright/.auth/customer.json` (if configured)
-  - `playwright/.auth/dokanCloud.json` (if configured)
-- **Command**: `npx playwright test --project=setup`
-- **When to Run**: Before first test run or when credentials change
+- **Creates**: `playwright/.auth/flycommerce.json`
 
-#### **2. marketplaceSetup** Project
-- **Purpose**: E2E marketplace creation and onboarding on app.dokan.co
+#### **Phase 1B — `marketplaceSetup`**
+- **Purpose**: Create a marketplace from FlyCommerce app
 - **Runs**: `tests/app_store/marketplaceOnboarding.spec.ts`
-- **Uses**: Dokan Cloud authentication (`dokanCloudPage` fixture)
-- **Creates**: New marketplace on Dokan Cloud platform
 
-#### **3. adminPreSetup** Project
-- **Purpose**: Creates prerequisite data (seed fixtures, categories, brands, collections, attributes, vendors) and completes setup guide
-- **Runs (in order)**:
-  - `tests/admin/seedData.spec.ts` ← **first** — creates stable fixtures for product tests
-  - `tests/admin/vendorCreate.spec.ts`
-  - `tests/admin/categoryCreate.spec.ts`
-  - `tests/admin/brandCreate.spec.ts`
-  - `tests/admin/collectionCreate.spec.ts`
-  - `tests/admin/productAttribute.spec.ts`
-  - `tests/admin/setupGuide.spec.ts` (should run after marketplaceOnboarding)
-  - `tests/admin/customerManagement.spec.ts`
-- **Uses**: Admin authentication (`adminPage` fixture)
+#### **Phase 1C — `setupMarketplaceAdminAuth`**
+- **Purpose**: Authenticate the newly-created marketplace admin
+- **Runs**: `tests/auth.setupAdmin.ts`
+- **Creates**: `playwright/.auth/admin.json`
 
-#### **4. vendorProductCreation** Project
-- **Purpose**: Vendor product creation and cleanup tests
-- **Runs**:
-  - `tests/vendor/productCreate.spec.ts`
-  - `tests/e2e/e2eDeleteProductRelatedThings.spec.ts`
-- **Uses**: Vendor authentication (`vendorPage` fixture) and Admin authentication
+#### **Phase 1D — `marketplaceAdminSetupGuide`**
+- **Purpose**: Complete setup guide as marketplace admin
+- **Runs**: `tests/admin/setupGuide.spec.ts`
 
-#### **5. cleanup** Project
-- **Purpose**: Cleanup operations (currently placeholder)
-- **Runs**: TBD
-- **Note**: Add delete tests here for cleanup workflows
+#### **Phase 2 — `adminSeedSetup`**
+- **Purpose**: Create seed entities + journey Vendor/Customer accounts
+- **Runs**: `tests/admin/seedData.spec.ts`
+
+#### **Phase 3 — `setupAuth`**
+- **Purpose**: Authenticate journey vendor/customer after Phase 2 account creation
+- **Runs**: `tests/auth.setupUsers.ts`
+- **Creates**: `playwright/.auth/vendor.json`, `playwright/.auth/customer.json`
+
+#### **Phase 4 — `vendorJourney`**
+- **Purpose**: Vendor creates seed product
+- **Runs**: `tests/vendor/productCreate.spec.ts`
+
+#### **Phase 5 — `customerJourney`**
+- **Purpose**: Customer checkout journey (Cash on Delivery)
+- **Runs**: `tests/customer/checkout.spec.ts`
 
 ### Test Configuration
 - **fullyParallel**: `true` - Tests run in parallel by default
@@ -514,13 +516,15 @@ The configuration defines several test projects for different test execution sta
 ### Running Tests
 
 ```bash
-# Setup authentication (run first)
-npx playwright test --project=setup
-
-# Run specific project
+# Final journey (run in order)
+npx playwright test --project=setupFlycommerceAuth
 npx playwright test --project=marketplaceSetup
-npx playwright test --project=adminPreSetup
-npx playwright test --project=vendorProductCreation
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 
 # Run all tests
 npx playwright test
@@ -546,8 +550,8 @@ npx playwright show-report
 
 ### Project Dependencies
 - Most projects have setup dependencies commented out
-- Run `--project=setup` manually before running other projects
-- `marketplaceSetup` should run before `adminPreSetup` if testing full E2E flow
+- Run `--project=setupFlycommerceAuth` first, then follow final phase order
+- `marketplaceSetup` should run before `setupMarketplaceAdminAuth` on fresh environments
 
 ---
 
@@ -623,7 +627,7 @@ async search{Entity}ByNameForDelete({entity}Name: string) {
 
 ### DO's ✅
 
-1. **Always use fixtures** for authentication (`adminPage`, `vendorPage`, `customerPage`, `dokanCloudPage`)
+1. **Always use fixtures** for authentication (`adminPage`, `vendorPage`, `customerPage`, `flycommercePage`)
 2. **Always use page objects** - Never interact with `page` directly in tests
 3. **Handle optional elements** - Check visibility before clicking (e.g., chat close button, privacy policy)
 4. **Add comments** to all methods and test steps (explain what, not how)
@@ -647,7 +651,7 @@ async search{Entity}ByNameForDelete({entity}Name: string) {
 7. **Don't commit `.env` file** - Keep credentials secure (add to `.gitignore`)
 8. **Don't assume element presence** - Check visibility for optional elements (chat buttons, privacy policy)
 9. **Don't use excessive waits** - Prefer explicit waits (`waitForLoadState`, `expect`) over arbitrary `waitForTimeout`
-10. **Don't mix domains** - Use correct fixture for correct domain (`adminPage` for main site, `dokanCloudPage` for app.dokan.co)
+10. **Don't mix domains** - Use correct fixture for correct domain (`adminPage` for marketplace site, `flycommercePage` for app.flycommerce.com)
 
 ---
 
@@ -777,7 +781,7 @@ test.describe.serial('Test Suite', () => {
 
 When working on this project, refer to:
 1. Existing page objects in `pages/admin/` for admin page patterns
-2. Existing page objects in `pages/app_store/` for Dokan Cloud (app.dokan.co) patterns
+2. Existing page objects in `pages/app_store/` for FlyCommerce Cloud (app.flycommerce.com) patterns
 3. Existing test files in `tests/admin/` for admin test structure
 4. Existing test files in `tests/e2e/` for E2E test structure
 5. `tests/fixtures/auth.fixtures.ts` for fixture usage
@@ -792,7 +796,7 @@ When working on this project, refer to:
   - `adminPage` - Main site admin authentication
   - `vendorPage` - Main site vendor authentication
   - `customerPage` - Main site customer authentication (optional)
-  - `dokanCloudPage` - Dokan Cloud app authentication (optional)
+  - `flycommercePage` - FlyCommerce app authentication (optional)
   
 - **`utils/testData.ts`** - Environment variables loader
   - Exports `Urls` object with all credentials and URLs
@@ -803,10 +807,10 @@ When working on this project, refer to:
   - Saves to `playwright/.auth/*.json`
   
 - **`playwright.config.ts`** - Playwright configuration
-  - Defines test projects: `setup`, `marketplaceSetup`, `adminPreSetup`, `vendorProductCreation`, `cleanup`
+  - Defines staged projects: `setupFlycommerceAuth`, `marketplaceSetup`, `setupMarketplaceAdminAuth`, `marketplaceAdminSetupGuide`, `adminSeedSetup`, `setupAuth`, `vendorJourney`, `customerJourney`
   - Test matching patterns, timeouts, reporters
   
-- **`pages/app_store/`** - Dokan Cloud (app.dokan.co) page objects
+- **`pages/app_store/`** - FlyCommerce Cloud (app.flycommerce.com) page objects
   - `dokanCloudLoginPage.ts` - Login to Dokan Cloud
   - `marketplaceOnboardingPage.ts` - Marketplace creation flow
   
@@ -820,8 +824,9 @@ When working on this project, refer to:
 # Create .env file with credentials (first time only)
 # See "Environment Configuration" section for required variables
 
-# Setup authentication (run first or when credentials change)
-npx playwright test --project=setup
+# Phase 1A + 1C auth setup
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=setupMarketplaceAdminAuth
 ```
 
 **Running Tests:**
@@ -829,10 +834,15 @@ npx playwright test --project=setup
 # Run all tests
 npx playwright test
 
-# Run specific project
+# Run final journey projects
+npx playwright test --project=setupFlycommerceAuth
 npx playwright test --project=marketplaceSetup
-npx playwright test --project=adminPreSetup
-npx playwright test --project=vendorProductCreation
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 
 # Run specific test file
 npx playwright test tests/admin/categoryCreate.spec.ts
@@ -874,19 +884,21 @@ npx playwright show-trace trace.zip
 
 **Full E2E Workflow:**
 ```bash
-# 1. Setup authentication
-npx playwright test --project=setup
-
-# 2. Create marketplace on Dokan Cloud
+# 1. FlyCommerce app admin auth + marketplace create
+npx playwright test --project=setupFlycommerceAuth
 npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
 
-# 3. Setup prerequisite data and complete setup guide
-npx playwright test --project=adminPreSetup
+# 2. Seed + auth for journey users
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
 
-# 4. Create vendor products
-npx playwright test --project=vendorProductCreation
+# 3. Journey execution
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 
-# 5. (Optional) Cleanup
+# 4. (Optional) Cleanup
 npx playwright test --project=cleanup
 ```
 
@@ -896,13 +908,14 @@ npx playwright test --project=cleanup
 ```bash
 # Delete auth files and re-authenticate
 rm -rf playwright/.auth/*.json
-npx playwright test --project=setup
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=setupMarketplaceAdminAuth
 ```
 
-**Dokan Cloud Not Working:**
+**FlyCommerce App Not Working:**
 - Check if `DOKAN_CLOUD_EMAIL` and `DOKAN_CLOUD_PASSWORD` are set in `.env`
 - If not needed, tests will skip gracefully
-- Run setup if credentials added: `npx playwright test --project=setup`
+- Run setup if credentials added: `npx playwright test --project=setupFlycommerceAuth`
 
 **Tests Failing:**
 - Check if URLs in `.env` are correct (no trailing slashes)
@@ -924,7 +937,7 @@ When working on this project, refer to:
 ### Internal Documentation
 1. **This file** (`PROJECT_CONTEXT.md`) - Comprehensive project documentation
 2. **Existing page objects** in `pages/admin/` - Admin page patterns
-3. **Existing page objects** in `pages/app_store/` - Dokan Cloud (app.dokan.co) patterns
+3. **Existing page objects** in `pages/app_store/` - FlyCommerce Cloud (app.flycommerce.com) patterns
 4. **Existing test files** in `tests/admin/` - Admin test structure
 5. **Existing test files** in `tests/e2e/` - E2E test structure
 6. **`tests/fixtures/auth.fixtures.ts`** - Fixture usage patterns
@@ -987,7 +1000,7 @@ When working on this codebase:
 
 **Common Mistakes to Avoid:**
 - Hardcoding URLs instead of using `Urls` from `testData.ts`
-- Mixing fixtures (e.g., using `adminPage` for app.dokan.co URLs)
+- Mixing fixtures (e.g., using `adminPage` for app.flycommerce.com URLs)
 - Not waiting for elements properly (causes flaky tests)
 - Skipping optional element checks (e.g., chat buttons)
 - Creating new patterns instead of following existing ones
@@ -998,9 +1011,9 @@ When working on this codebase:
 ## 🆕 Recent Updates
 
 ### 1. Multi-Domain Authentication (January 2025)
-**Added support for Dokan Cloud (app.dokan.co) authentication:**
+**Added support for FlyCommerce Cloud (app.flycommerce.com) authentication:**
 - New environment variables: `DOKAN_CLOUD_URL`, `DOKAN_CLOUD_EMAIL`, `DOKAN_CLOUD_PASSWORD`
-- New `dokanCloudPage` fixture in `auth.fixtures.ts` (optional - skips gracefully if not configured)
+- New `flycommercePage` fixture in `auth.fixtures.ts` (optional - skips gracefully if not configured)
 - New `authenticate dokan cloud` setup in `auth.setup.ts`
 - Session saved to `playwright/.auth/dokanCloud.json`
 - Automatic navigation to `/cloud/stores` on fixture initialization
@@ -1009,7 +1022,7 @@ When working on this codebase:
 **Complete marketplace onboarding automation:**
 
 #### App Store Pages (`pages/app_store/`)
-- **`dokanCloudLoginPage.ts`**: Handles login to app.dokan.co
+- **`flycommerceLoginPage.ts`**: Handles login to app.flycommerce.com
   - Navigate to login page
   - Fill credentials
   - Verify successful login to "My Stores" page
@@ -1035,7 +1048,7 @@ When working on this codebase:
 
 #### Test Organization
 - **`tests/app_store/marketplaceOnboarding.spec.ts`**: 
-  - Uses `dokanCloudPage` fixture
+  - Uses `flycommercePage` fixture
   - Creates marketplace through Dokan Cloud app
   - Verifies redirection to setup guide
   
@@ -1079,7 +1092,7 @@ When working on this codebase:
 
 ### 6. Project Restructuring (December 2024 - January 2025)
 **Organized page objects by domain/area:**
-- **Created `pages/app_store/`** for Dokan Cloud pages (app.dokan.co)
+- **Created `pages/app_store/`** for FlyCommerce Cloud pages (app.flycommerce.com)
 - **Moved `setupGuidePage.ts`** to `pages/admin/` (admin area of marketplace)
 - **Created `tests/app_store/`** for app store onboarding tests
 - **Split E2E test**: Separated marketplace creation and setup guide into two focused tests
@@ -1188,26 +1201,28 @@ All "Dokan Cloud" references have been renamed to "FlyCommerce" throughout the c
 
 > The env variables (`DOKAN_CLOUD_URL/EMAIL/PASSWORD`) are kept unchanged for backwards compatibility — `testData.ts` just maps them to the new `flycommerceUrl/Email/Password` keys.
 
-#### Three-Phase Auth Strategy (fresh marketplace)
+#### Final Auth Strategy (fresh marketplace)
 
-A fresh marketplace has no vendor or customer accounts on day 1. This creates a chicken-and-egg problem: `auth.setup.ts` can't save vendor/customer sessions before those accounts exist.
-
-**Solution — run `auth.setup.ts` twice:**
+Marketplace admin does not exist until onboarding creates a marketplace, so auth is intentionally split:
 
 ```
-Phase 1 → "setup" project
-  auth.setup.ts runs → admin.json + flycommerce.json saved
-  vendor/customer auth: try/catch → graceful SKIP (accounts don't exist yet)
+Phase 1A → "setupFlycommerceAuth" project
+  auth.setup.ts runs -> flycommerce.json saved (app admin)
 
-Phase 2 → "adminSeedSetup" project  (depends on: setup)
+Phase 1B → "marketplaceSetup" project
+  marketplaceOnboarding creates marketplace domain/admin
+
+Phase 1C → "setupMarketplaceAdminAuth" project
+  auth.setupAdmin.ts runs -> admin.json saved (marketplace admin)
+
+Phase 2 → "adminSeedSetup" project
   seedData.spec.ts creates:
-    Brand, Category, Collection, Attribute (permanent fixtures)
+    Brand, Category, Collection, Attribute
     Journey Vendor account (email=VENDOR_EMAIL, password=VENDOR_PASSWORD)
     Journey Customer account (email=CUSTOMER_EMAIL, password=CUSTOMER_PASSWORD)
 
-Phase 3 → "setupAuth" project  (run manually: npx playwright test --project=setupAuth)
-  auth.setupUsers.ts runs → vendor.json + customer.json now saved
-  (separate file from auth.setup.ts — only contains vendor + customer auth)
+Phase 3 → "setupAuth" project
+  auth.setupUsers.ts runs -> vendor.json + customer.json saved
 ```
 
 #### Journey Account Pattern
@@ -1229,24 +1244,31 @@ SeedData.product  → { name: 'Automation Product', price: '1200' }
 #### Projects in `playwright.config.ts` (no `dependencies` — all run independently)
 
 ```
-setup            → auth.setup.ts          (admin.json + flycommerce.json)
-adminSeedSetup   → seedData.spec.ts       (seed entities + journey accounts — run once manually)
-setupAuth        → auth.setupUsers.ts     (vendor.json + customer.json — run once after adminSeedSetup)
-adminCRUD        → admin CRUD specs       (uses admin.json — run freely)
-vendorJourney    → vendor specs           (uses vendor.json — run after setupAuth)
-customerJourney  → customer specs         (uses customer.json — `timeout: 90_000` — run after vendorJourney for seed product)
+setupFlycommerceAuth    → auth.setup.ts               (flycommerce.json)
+marketplaceSetup        → marketplaceOnboarding       (creates marketplace)
+setupMarketplaceAdminAuth → auth.setupAdmin.ts        (admin.json for created marketplace)
+marketplaceAdminSetupGuide → setupGuide.spec.ts       (setup guide completion)
+adminSeedSetup          → seedData.spec.ts            (seed entities + journey accounts — run once manually)
+setupAuth               → auth.setupUsers.ts          (vendor.json + customer.json)
+vendorJourney           → productCreate.spec.ts       (seed product creation)
+customerJourney         → checkout.spec.ts            (customer checkout, `timeout: 90_000`)
+adminCRUD               → optional admin CRUD specs
 adminVerify      → order verification     (placeholder — no tests yet)
 cleanup          → delete specs           (uses admin.json)
-marketplaceSetup → marketplaceOnboarding  (uses flycommerce.json — standalone, run manually)
 ```
 
-Run order for a fresh marketplace (one-time setup):
+Run order for a fresh marketplace:
 ```bash
-npx playwright test --project=setup
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
 npx playwright test --project=adminSeedSetup
 npx playwright test --project=setupAuth
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 ```
-After that, each project can run independently any time.
+After these, required states and product are ready for the final checkout journey.
 
 #### `customerPage` Fixture (`auth.fixtures.ts`)
 
@@ -1310,7 +1332,7 @@ Random name/address/phone for checkout; shipping step often uses a fixed address
 #### `tests/admin/seedData.spec.ts` (New)
 - **4 serial tests** — one per seed entity (Brand, Category, Collection, Attribute)
 - Reuses existing page objects (`BrandManagementPage`, `CategoryManagementPage`, `CollectionManagementPage`, `AttributeManagementPage`) + `SeedData` constants
-- Runs **first** in `adminPreSetup` project — all subsequent tests that need these entities will find them ready
+- Runs in `adminSeedSetup` — all subsequent tests that need these entities will find them ready
 
 #### Two-Tier Data Strategy
 | | CRUD Tests | Seed Data |
@@ -1320,7 +1342,7 @@ Random name/address/phone for checkout; shipping step often uses a fixed address
 | Lifecycle | Create → test → **delete** | Create once, **never deleted** |
 | Purpose | Test the feature | Provide stable fixtures |
 
-#### `playwright.config.ts` — `adminPreSetup` update
+#### `playwright.config.ts` — `adminSeedSetup` update
 - `seedData.spec.ts` added as the **first** entry in `testMatch`
 - `productAttribute.spec.ts` added after `collectionCreate.spec.ts`
 
@@ -1350,9 +1372,14 @@ All `dependencies` removed from every project. Projects now run independently us
 
 One-time setup (run manually in order on a fresh marketplace):
 ```bash
-npx playwright test --project=setup           # admin.json + flycommerce.json
-npx playwright test --project=adminSeedSetup  # seed data + vendor + customer accounts
-npx playwright test --project=setupAuth       # vendor.json + customer.json
+npx playwright test --project=setupFlycommerceAuth
+npx playwright test --project=marketplaceSetup
+npx playwright test --project=setupMarketplaceAdminAuth
+npx playwright test --project=marketplaceAdminSetupGuide
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 ```
 
 #### `pages/vendor/productCreatePage.ts` — Major Update
