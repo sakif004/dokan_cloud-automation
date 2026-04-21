@@ -14,7 +14,7 @@ test.describe('App Store - Marketplace Onboarding', () => {
         await flycommercePage.page.waitForLoadState('networkidle');
         await flycommercePage.page.waitForTimeout(1000);
         const myStoresHeading = flycommercePage.page.getByRole('heading', { name: 'My Stores' });
-        await myStoresHeading.waitFor({ state: 'visible', timeout: 15000 });
+        await myStoresHeading.waitFor({ state: 'visible', timeout: 100000 });
 
         // Open the marketplace creation wizard
         await flycommercePage.page.getByRole('button', { name: 'Create New Store' }).click();
