@@ -29,7 +29,7 @@ A production-ready automation testing framework built with **Playwright** and **
 ## ✨ Features
 
 ### 🎯 Core Capabilities
-- **Multi-Domain Testing**: Test across main Dokan site and Dokan Cloud (app.dokan.co)
+- **Multi-Domain Testing**: Marketplace storefront (`*.flycom.shop`) and FlyCommerce Cloud (`app.flycommerce.com`)
 - **Role-Based Authentication**: Admin, Vendor, Customer, and Dokan Cloud app user authentication
 - **Session Persistence**: Fast test execution with reusable authentication states
 - **E2E Marketplace Creation**: Complete marketplace onboarding and setup guide automation
@@ -98,7 +98,7 @@ My Dokan Automation/
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation flow
 │   ├── common/                         # Shared helpers
 │   │   └── chatManager.ts              # Chat widget handler
-│   └── customer/                       # Customer pages (placeholder)
+│   └── customer/                       # Storefront POMs (Shop, PDP, cart, checkout)
 │
 ├── tests/                              # Test specifications
 │   ├── admin/                          # Admin test suites
@@ -122,7 +122,7 @@ My Dokan Automation/
 │   │   └── e2eDeleteProductRelatedThings.spec.ts
 │   ├── fixtures/                       # Custom test fixtures
 │   │   └── auth.fixtures.ts            # Authentication fixtures
-│   ├── customer/                       # Customer tests (placeholder)
+│   ├── customer/                       # customerLogin, browseProducts, addToCart, checkout
 │   └── auth.setup.ts                   # Authentication setup script
 │
 ├── utils/                              # Utilities
@@ -133,7 +133,7 @@ My Dokan Automation/
 │       ├── admin.json
 │       ├── vendor.json
 │       ├── customer.json              # Optional
-│       └── dokanCloud.json            # Optional
+│       ├── flycommerce.json          # FlyCommerce Cloud app (optional)
 │
 ├── playwright.config.ts                # Playwright configuration
 ├── package.json                        # Dependencies
@@ -207,8 +207,8 @@ CUSTOMER_URL=https://your-dokan-site.com
 CUSTOMER_EMAIL=customer@example.com
 CUSTOMER_PASSWORD=your_customer_password
 
-# Dokan Cloud Configuration (Optional - for marketplace creation)
-DOKAN_CLOUD_URL=https://app.dokan.co
+# FlyCommerce Cloud (Optional — marketplace onboarding; env names kept as DOKAN_CLOUD_*)
+DOKAN_CLOUD_URL=https://app.flycommerce.com
 DOKAN_CLOUD_EMAIL=your-email@example.com
 DOKAN_CLOUD_PASSWORD=your_password
 ```
@@ -216,7 +216,7 @@ DOKAN_CLOUD_PASSWORD=your_password
 **Important Notes:**
 - ✅ **DO NOT** include trailing slashes in URLs
 - ✅ **DO NOT** commit `.env` file to version control (already in `.gitignore`)
-- ✅ Customer and Dokan Cloud credentials are optional - tests will skip gracefully if not configured
+- ✅ Customer and FlyCommerce Cloud credentials are optional — tests skip gracefully if not configured
 - ✅ All URLs should use HTTPS
 
 ### Playwright Configuration
@@ -225,11 +225,14 @@ The project uses a **multi-project setup** in `playwright.config.ts`:
 
 | Project | Purpose | Runs |
 |---------|---------|------|
-| **setup** | Authentication setup | Creates session files for all roles |
-| **marketplaceSetup** | E2E marketplace creation | Marketplace onboarding on app.dokan.co |
-| **adminPreSetup** | Prerequisite data creation | Categories, brands, collections, vendors, setup guide |
-| **vendorProductCreation** | Vendor tests | Product creation and deletion |
-| **cleanup** | Cleanup operations | TBD |
+| **setup** | Phase 1 auth | `admin.json` + `flycommerce.json` |
+| **adminSeedSetup** | Seed data + journey vendor/customer accounts | `seedData.spec.ts` (run once on fresh env) |
+| **setupAuth** | Phase 3 auth | `vendor.json` + `customer.json` |
+| **adminCRUD** | Admin specs | Uses `admin.json` |
+| **vendorJourney** | Vendor login + seed product | Uses `vendor.json` |
+| **customerJourney** | Customer storefront (login, browse, add to cart, checkout) | Uses `customer.json` |
+| **cleanup** | Deletes product + related | Uses `admin.json` |
+| **marketplaceSetup** | Marketplace onboarding on FlyCommerce Cloud | Standalone |
 
 ---
 
@@ -243,11 +246,11 @@ The project uses a **multi-project setup** in `playwright.config.ts`:
 npx playwright test --project=setup
 ```
 
-This creates authentication state files in `playwright/.auth/`:
-- ✅ `admin.json` - Admin session
-- ✅ `vendor.json` - Vendor session
-- ✅ `customer.json` - Customer session (if configured)
-- ✅ `dokanCloud.json` - Dokan Cloud session (if configured)
+Phase 1 (`--project=setup`) writes `playwright/.auth/`:
+- ✅ `admin.json` — Admin session  
+- ✅ `flycommerce.json` — FlyCommerce Cloud app session  
+
+After `adminSeedSetup`, run `--project=setupAuth` to add `vendor.json` and `customer.json`.
 
 **When to re-run:**
 - When credentials change in `.env`
@@ -265,14 +268,17 @@ npx playwright test
 
 #### Run Specific Project
 ```bash
-# Marketplace creation
+# Marketplace onboarding (FlyCommerce Cloud)
 npx playwright test --project=marketplaceSetup
 
-# Admin prerequisite setup
-npx playwright test --project=adminPreSetup
+# Seed data + journey accounts (run once when needed)
+npx playwright test --project=adminSeedSetup --no-deps
 
-# Vendor product tests
-npx playwright test --project=vendorProductCreation
+# Vendor + customer auth after seeds exist
+npx playwright test --project=setupAuth --no-deps
+
+# Customer storefront journey
+npx playwright test --project=customerJourney
 ```
 
 #### Run Specific Test Suite
@@ -285,6 +291,9 @@ npx playwright test tests/vendor
 
 # All app store tests
 npx playwright test tests/app_store
+
+# Customer journey specs
+npx playwright test tests/customer --project=customerJourney
 
 # Specific test file
 npx playwright test tests/admin/categoryCreate.spec.ts
@@ -342,21 +351,19 @@ npx playwright show-trace trace.zip
 ### 5️⃣ Full E2E Workflow Example
 
 ```bash
-# Complete marketplace creation and setup workflow
+# One-time marketplace + seed + auth (adjust order for your environment)
 
-# Step 1: Setup authentication
 npx playwright test --project=setup
+npx playwright test --project=adminSeedSetup --no-deps
+npx playwright test --project=setupAuth --no-deps
 
-# Step 2: Create marketplace on Dokan Cloud
+# Optional: marketplace onboarding on FlyCommerce Cloud
 npx playwright test --project=marketplaceSetup
 
-# Step 3: Setup prerequisite data and complete setup guide
-npx playwright test --project=adminPreSetup
+# Journeys
+npx playwright test --project=vendorJourney
+npx playwright test --project=customerJourney
 
-# Step 4: Create vendor products
-npx playwright test --project=vendorProductCreation
-
-# Step 5: View results
 npx playwright show-report
 ```
 
@@ -420,8 +427,8 @@ test('Vendor test', async ({ vendorPage }) => {
     await productPage.createProduct({ name: 'Test Product' });
 });
 
-test('Dokan Cloud test', async ({ dokanCloudPage }) => {
-    const onboardingPage = new MarketplaceOnboardingPage(dokanCloudPage.page);
+test('FlyCommerce Cloud test', async ({ flycommercePage }) => {
+    const onboardingPage = new MarketplaceOnboardingPage(flycommercePage.page);
     await onboardingPage.completeOnboarding({ marketplaceName: 'Test Store' });
 });
 ```
@@ -430,10 +437,10 @@ test('Dokan Cloud test', async ({ dokanCloudPage }) => {
 - `adminPage` - Main site admin (authenticated to `/admin`)
 - `vendorPage` - Main site vendor (authenticated to `/vendor`)
 - `customerPage` - Main site customer (optional)
-- `dokanCloudPage` - Dokan Cloud app (authenticated to `/cloud/stores`)
+- `flycommercePage` - FlyCommerce Cloud app (authenticated to `app.flycommerce.com`)
 
 **How it works:**
-1. `auth.setup.ts` logs in each role and saves session to JSON
+1. `auth.setup.ts` / `auth.setupUsers.ts` log in each role and save session to JSON
 2. Fixtures load saved session and create authenticated browser context
 3. Tests start already logged in - **no login overhead**
 
@@ -520,6 +527,17 @@ await page.goto('https://example.com/admin/products'); // DON'T DO THIS
 |-----------|---------|----------|
 | `e2eDeleteProductRelatedThings.spec.ts` | Serial deletion | Product → Category → Brand → Collection |
 
+### Customer Tests (`tests/customer/`)
+
+Requires `customer.json` and a seed product from `vendorJourney` (`SeedData.product.name`).
+
+| Test File | Purpose |
+|-----------|---------|
+| `customerLogin.spec.ts` | Storefront login / session checks |
+| `browseProducts.spec.ts` | Shop → search → PDP (`test.describe.serial`) |
+| `addToCart.spec.ts` | Single test: add seed product to cart (success modal) |
+| `checkout.spec.ts` | One E2E: cart → FlyCommerce checkout wizard → COD → confirmation → My Orders |
+
 ---
 
 ## 🎯 Best Practices
@@ -566,9 +584,9 @@ ls -la playwright/.auth/
 
 ---
 
-### Dokan Cloud Tests Not Running
+### FlyCommerce Cloud Tests Not Running
 
-**Problem**: Dokan Cloud tests are skipped
+**Problem**: Marketplace onboarding tests are skipped
 
 **Solution**:
 1. Check if `DOKAN_CLOUD_EMAIL` and `DOKAN_CLOUD_PASSWORD` are set in `.env`
@@ -711,6 +729,6 @@ For issues, questions, or contributions:
 
 ---
 
-**Last Updated:** March 2026 
+**Last Updated:** April 2026
 **Framework Version:** Playwright 1.56.1  
 **TypeScript Version:** 5.x

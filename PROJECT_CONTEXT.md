@@ -5,7 +5,7 @@
 This is an **end-to-end automation testing framework** for the **Dokan e-commerce platform** using **Playwright** and **TypeScript**. The project follows a **Page Object Model (POM)** architecture with custom fixtures for authentication management across multiple roles and domains.
 
 ### Key Features
-- **Multi-Domain Testing**: Tests across main Dokan site and Dokan Cloud (app.dokan.co)
+- **Multi-Domain Testing**: Storefront (`*.flycom.shop`) and FlyCommerce Cloud (`app.flycommerce.com`)
 - **Role-Based Authentication**: Admin, Vendor, Customer, and Dokan Cloud App user authentication
 - **E2E Marketplace Creation**: Complete marketplace onboarding and setup guide automation
 - **CRUD Operations**: Full coverage for Products, Categories, Brands, Collections, Vendors, and Customers
@@ -65,7 +65,7 @@ Authentication is handled through custom fixtures in `tests/fixtures/auth.fixtur
 **Key Points:**
 - Uses stored authentication states from `playwright/.auth/` directory
 - Each fixture creates a new browser context with saved session state
-- Fixtures automatically navigate to relevant URLs to ensure session is loaded
+- Fixtures navigate to a default URL to confirm the session (`customerPage`: storefront `goto` with `waitUntil: 'domcontentloaded'` — avoids burning the test timeout on SPA `networkidle`)
 - `flycommercePage` and `customerPage` skip gracefully if credentials not configured
 - All fixtures include proper waits for stability
 
@@ -147,7 +147,7 @@ My Dokan Automation/
 │   ├── common/                         # Shared/common helpers
 │   │   ├── chatManager.ts              # Handles optional chat widgets across pages
 │   │   └── mediaManager.ts             # Handles WordPress media library upload flow (reusable)
-│   └── customer/                       # Customer role page objects (placeholder)
+│   └── customer/                       # FlyCommerce storefront: shop, PDP, cart, checkout
 │
 ├── tests/                              # Test specifications organized by role/area
 │   ├── admin/                          # Admin test suites (main site)
@@ -173,9 +173,9 @@ My Dokan Automation/
 │   │   └── marketplaceOnboarding.spec.ts # Complete marketplace creation flow
 │   ├── customer/                       # Customer storefront test suites
 │   │   ├── customerLogin.spec.ts       # Login + logout flow
-│   │   ├── browseProducts.spec.ts      # Product search and detail view
-│   │   ├── addToCart.spec.ts           # Cart operations
-│   │   └── checkout.spec.ts            # Full checkout flow (serial, shared orderId)
+│   │   ├── browseProducts.spec.ts      # Shop → search → PDP (`test.describe.serial`)
+│   │   ├── addToCart.spec.ts           # One test: add `SeedData.product` + verify modal
+│   │   └── checkout.spec.ts            # One E2E: cart → wizard → COD → confirmation → My Orders
 │   ├── e2e/                            # End-to-end test suites
 │   │   └── e2eDeleteProductRelatedThings.spec.ts  # Serial deletion flow
 │   ├── fixtures/                       # Custom test fixtures
@@ -1234,7 +1234,7 @@ adminSeedSetup   → seedData.spec.ts       (seed entities + journey accounts �
 setupAuth        → auth.setupUsers.ts     (vendor.json + customer.json — run once after adminSeedSetup)
 adminCRUD        → admin CRUD specs       (uses admin.json — run freely)
 vendorJourney    → vendor specs           (uses vendor.json — run after setupAuth)
-customerJourney  → customer specs         (uses customer.json — run after vendorJourney)
+customerJourney  → customer specs         (uses customer.json — `timeout: 90_000` — run after vendorJourney for seed product)
 adminVerify      → order verification     (placeholder — no tests yet)
 cleanup          → delete specs           (uses admin.json)
 marketplaceSetup → marketplaceOnboarding  (uses flycommerce.json — standalone, run manually)
@@ -1248,39 +1248,35 @@ npx playwright test --project=setupAuth
 ```
 After that, each project can run independently any time.
 
-#### `customerPage` Fixture Improvements (`auth.fixtures.ts`)
+#### `customerPage` Fixture (`auth.fixtures.ts`)
 
-- Checks for `CUSTOMER_EMAIL` env var — skips gracefully if not set
-- Checks for `playwright/.auth/customer.json` existence — skips with clear instructions if missing
-- On success: navigates to `Urls.customerUrl` to confirm session is active
+- Checks for `CUSTOMER_EMAIL` and `playwright/.auth/customer.json` — skips gracefully if missing
+- On success: `page.goto(Urls.customerUrl, { waitUntil: 'domcontentloaded' })` (no long `networkidle` / sleep in fixture)
 
-#### Customer Pages Created (`pages/customer/`)
+#### Customer Pages (`pages/customer/`) — FlyCommerce storefront
+
+Locators match the React storefront (not classic WooCommerce shortcodes).
 
 | File | Key Methods |
 |------|-------------|
-| `customerAuthPage.ts` | `navigateToLogin()`, `login()`, `logout()`, `verifyLoggedIn()`, `verifyLoggedOut()` |
-| `storefrontPage.ts` | `navigateToShop()`, `searchProduct()`, `selectProduct()`, `verifyProductVisible()` |
-| `productDetailPage.ts` | `setQuantity()`, `addToCart()`, `verifyAddedToCart()`, `verifyProductTitle()` |
-| `cartPage.ts` | `navigateToCart()`, `verifyProductInCart()`, `applyCoupon()`, `proceedToCheckout()` |
-| `checkoutPage.ts` | `fillContactInfo()`, `fillShippingAddress()`, `selectPaymentMethod()`, `placeOrder()`, `verifyOrderConfirmation()`, `getOrderId()` |
+| `customerAuthPage.ts` | Homepage **Login** link → modal email/password → Sign in → logout flow |
+| `storefrontPage.ts` | `navigateToHome()`, `navigateToShop()`, `searchProduct()`, `selectProduct()`, `verifyProductVisible()` |
+| `productDetailPage.ts` | `h3.product-title`, `addToCart()`, `verifyAddedToCart()` (modal **Go to Cart**), `goToCartFromModal()`, `verifyProductTitle()` |
+| `cartPage.ts` | `verifyCartPageLoaded()`, `verifyCartSummaryVisible()`, `verifyProductInCart()` (line item `heading` level 4), `navigateToCart()`, `proceedToCheckout()`, coupon helpers |
+| `checkoutPage.ts` | FlyCommerce **wizard**: `verifyContactInformationVisible(email)`, `fillShippingStep(...)`, `selectShippingAndContinueToPayment()`, `selectCashOnDeliveryAndPlaceOrder()`, `verifyOrderReceived()`, `getOrderId()`, `goToMyOrders()`, `navigateToCheckout()` |
 
-> **Note:** Customer page locators are based on WooCommerce standard patterns. Confirm against actual storefront UI before running — adjust any locators that don't match.
+#### `generateCheckoutData()` (`utils/fakerData.ts`)
 
-#### `generateCheckoutData()` added to `utils/fakerData.ts`
-
-Generates random billing address for checkout tests:
-```typescript
-{ firstName, lastName, address, city: 'Dhaka', country: 'Bangladesh', zipCode, phone }
-```
+Random name/address/phone for checkout; shipping step often uses a fixed address line (e.g. `wedevs Academy`) for autocomplete.
 
 #### Customer Test Specs (`tests/customer/`)
 
-| File | Tests | Pattern |
-|------|-------|---------|
-| `customerLogin.spec.ts` | CL001–CL004 | Independent — uses fixture session |
-| `browseProducts.spec.ts` | CBR001–CBR004 | Independent — uses `SeedData.product.name` |
-| `addToCart.spec.ts` | CCT001–CCT004 | Independent — add → verify → cart |
-| `checkout.spec.ts` | CCO001–CCO004 | `test.describe.serial` — full checkout flow |
+| File | Tests | Notes |
+|------|-------|-------|
+| `customerLogin.spec.ts` | CL001–CL004 | Uses `customerPage` fixture |
+| `browseProducts.spec.ts` | CBR001–CBR004 | `test.describe.serial` — `SeedData.product.name` |
+| `addToCart.spec.ts` | **1** | `add product to cart` — modal success only |
+| `checkout.spec.ts` | **1** | `complete checkout with Cash on Delivery` — full E2E |
 
 ### 14. Attribute CRUD + Seed Data Setup (April 2025)
 **New page object and two-tier data strategy for product creation prerequisites:**

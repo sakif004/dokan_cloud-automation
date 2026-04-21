@@ -109,10 +109,11 @@ tests/
 | `auth.setup.ts` | `setup` | `admin.json` + `flycommerce.json` |
 | `auth.setupUsers.ts` | `setupAuth` | `vendor.json` + `customer.json` |
 
-**Login locators (vendor portal = same React app as admin):**
-- Admin + Vendor: `getByRole('textbox', { name: 'Email Address' })` / `getByRole('textbox', { name: 'Password' })` / `getByRole('button', { name: 'Sign In', exact: true })`
-- Customer storefront: `#reg-email` / `#login-password`
-- FlyCommerce: `getByRole('textbox', { name: 'Enter your email' })` / `getByRole('textbox', { name: 'Write your password' })`
+**Login locators:**
+- Admin + Vendor (`/admin/login`, `/vendor/login`): same React app — role-based textboxes + **Sign In**
+- Customer — **`auth.setupUsers.ts`** (saves `customer.json`): classic storefront `/login` — `#reg-email`, `#login-password`, Sign in
+- Customer — **`customerAuthPage.ts`** (optional UI tests): homepage modal login flow (codegen-aligned)
+- FlyCommerce app: email/password textboxes + Sign In
 
 ---
 
@@ -188,10 +189,10 @@ npx playwright test --project=setupAuth      # vendor.json + customer.json
 | # | Task | File to Create | Status |
 |---|------|---------------|--------|
 | 2.8 | Customer login spec (4 tests) | `tests/customer/customerLogin.spec.ts` | ✅ Done |
-| 2.9 | Browse products spec (4 tests) | `tests/customer/browseProducts.spec.ts` | ✅ Done |
-| 2.10 | Add to cart spec (4 tests) | `tests/customer/addToCart.spec.ts` | ✅ Done |
-| 2.11 | Checkout flow spec (serial, 4 tests) | `tests/customer/checkout.spec.ts` | ✅ Done |
-| 2.12 | Add `customerJourney` project to `playwright.config.ts` | `playwright.config.ts` | ✅ Done |
+| 2.9 | Browse products spec (4 tests, `test.describe.serial`) | `tests/customer/browseProducts.spec.ts` | ✅ Done |
+| 2.10 | Add to cart spec (**1 test** — add seed product + modal verify) | `tests/customer/addToCart.spec.ts` | ✅ Done |
+| 2.11 | Checkout spec (**1 E2E** — cart → FlyCommerce wizard → COD → My Orders) | `tests/customer/checkout.spec.ts` | ✅ Done |
+| 2.12 | Add `customerJourney` project (`timeout` 90s for fixture + flows) | `playwright.config.ts` | ✅ Done |
 
 ---
 
@@ -249,7 +250,7 @@ npx playwright test --project=setupAuth      # vendor.json + customer.json
 | T3 | `countryDropdownTrigger` uses `nth(2)` — fragile if UI changes | `marketplaceOnboardingPage.ts` | Low |
 | T4 | `divisionDropdownTrigger` uses `nth(5)` — fragile if UI changes | `marketplaceOnboardingPage.ts` | Low |
 | T5 | ~~`setupGuide.spec.ts` wrong fixture~~ — Fixed | `utils/testData.ts` | ✅ Fixed |
-| T6 | Customer storefront page locators (`pages/customer/*.ts`) need UI inspection to confirm | `pages/customer/*.ts` | Medium |
+| T6 | ~~Customer storefront POMs~~ — aligned to **FlyCommerce** storefront (`*.flycom.shop`), not WooCommerce table markup | `pages/customer/*.ts` | ✅ Addressed |
 
 ---
 
@@ -324,7 +325,8 @@ DOKAN_CLOUD_PASSWORD=your_password
 | Apr 2025 | `pages/admin/customerManagementPage.ts` — `createCustomer()` accepts optional `password` field; added `verifyCustomerCreatedSuccessfully()` method |
 | Apr 2025 | `tests/admin/seedData.spec.ts` — added 2 new tests: "Seed: create journey Vendor account" + "Seed: create journey Customer account" (uses SeedData.vendor/customer from .env) |
 | Apr 2025 | `pages/customer/` — 5 new POMs: `customerAuthPage`, `storefrontPage`, `productDetailPage`, `cartPage`, `checkoutPage` |
-| Apr 2025 | `tests/customer/` — 4 new specs: `customerLogin`, `browseProducts`, `addToCart`, `checkout` (serial checkout flow with shared orderId) |
+| Apr 2025 | `tests/customer/` — `customerLogin`, `browseProducts`, `addToCart`, `checkout` |
+| Apr 2026 | Customer storefront POMs + specs updated for **FlyCommerce** UI: cart/`h4` line titles, checkout wizard (Contact → Orders → Payment), add-to-cart modal via **Go to Cart**; `addToCart`/`checkout` slimmed to **1 test each**; `customerJourney` **90s** timeout; `customerPage` fixture uses `domcontentloaded` (no `networkidle` wait in fixture) |
 | Apr 2025 | `playwright.config.ts` — fully rewritten to 8-project dependency chain (setup → adminSeedSetup → setupAuth → adminCRUD/vendorJourney → customerJourney → adminVerify → cleanup) |
 | Apr 2026 | **Session 6 — Auth setup fixes + architecture cleanup** |
 | Apr 2026 | `auth.setup.ts` — split into two files: `auth.setup.ts` (admin+flycommerce only) and `auth.setupUsers.ts` (vendor+customer only, Phase 3) |
@@ -338,5 +340,5 @@ DOKAN_CLOUD_PASSWORD=your_password
 
 ---
 
-**Last Updated:** April 2026 (Session 6)  
-**Current Phase:** Phase 2 ✅ Complete — auth architecture stabilized + vendor product creation updated — moving to Phase 3 (Subscription Plans & Commission)
+**Last Updated:** April 2026  
+**Current Phase:** Phase 2 ✅ Complete — FlyCommerce customer journey (browse / add to cart / checkout) documented in POMs — Phase 3 next (Subscription Plans & Commission)
