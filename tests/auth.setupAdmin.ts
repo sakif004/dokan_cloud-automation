@@ -29,11 +29,11 @@ setup('authenticate marketplace admin', async ({ page }) => {
     await page.getByRole('textbox', { name: 'Password' }).fill(Urls.adminPassword);
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 
-    // UI copy can vary across builds; rely on successful post-login route first.
+    // Dashboard heading text may vary by build/theme, so verify login via URL transition first.
     await expect(page).not.toHaveURL(/\/admin\/login\/?$/i, { timeout: 30000 });
     await expect(page).toHaveURL(/\/admin(\/.*)?$/i, { timeout: 30000 });
 
-    // Keep one visible post-login marker as an extra guard, but avoid strict heading dependency.
+    // Add one stable post-login UI marker without relying on a specific heading node.
     await expect(page.getByRole('link', { name: /dashboard/i }).first()).toBeVisible({ timeout: 30000 });
 
     await page.context().storageState({ path: adminAuthFile });
