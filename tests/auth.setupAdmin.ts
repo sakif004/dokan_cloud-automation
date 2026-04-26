@@ -38,6 +38,12 @@ setup('authenticate marketplace admin', async ({ page }) => {
             loggedIn = true;
             break;
         } catch {
+            const currentUrl = page.url();
+            const loginError = (await page.locator('.error, .alert, .invalid-feedback, [role="alert"]').first().textContent().catch(() => ''))?.trim();
+            console.log(
+                `⚠️ Marketplace admin login attempt ${attempt}/${maxAttempts} failed. URL: ${currentUrl}.` +
+                    (loginError ? ` Message: ${loginError}` : ' No visible error message.')
+            );
             if (attempt < maxAttempts) {
                 console.log(`⏳ Marketplace admin not ready yet (attempt ${attempt}/${maxAttempts}). Retrying...`);
                 await page.waitForTimeout(8000);
