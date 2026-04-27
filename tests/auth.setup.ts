@@ -33,7 +33,7 @@ setup('authenticate flycommerce', async ({ page }) => {
         return;
     }
 
-    const flycommerceUrl = Urls.flycommerceUrl || 'https://app.flycommerce.com';
+    const flycommerceUrl = Urls.flycommerceUrl || '';
     await page.goto(flycommerceUrl + '/login');
     await page.waitForURL('**/login');
     await page.waitForLoadState('domcontentloaded');

@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/auth.fixtures';
 import { MarketplaceOnboardingPage } from '../../pages/app_store/marketplaceOnboardingPage';
+import { Urls } from '../../utils/testData';
 
 test.describe('App Store - Marketplace Onboarding', () => {
     test('Create Marketplace', async ({ flycommercePage }) => {
@@ -47,7 +48,8 @@ test.describe('App Store - Marketplace Onboarding', () => {
         // Click "Preview Store" — opens the storefront in another new tab
         const storePage = await onboardingPage.clickPreviewStore();
 
-        // Verify the storefront URL matches the flycom.shop domain (subdomain is dynamic)
-        await expect(storePage).toHaveURL(/\.flycom\.shop\/?$/, { timeout: 30000 });
+        // Verify storefront opens on the configured environment host (prod/staging).
+        const expectedHost = new URL(Urls.customerUrl).host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        await expect(storePage).toHaveURL(new RegExp(`^https?://${expectedHost}/?$`), { timeout: 30000 });
     });
 });
