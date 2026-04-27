@@ -89,7 +89,10 @@ export class CheckoutPage {
         await expect(this.placeOrderButton).toBeVisible();
 
         await this.placeOrderButton.click();
+        // Wait for post-order navigation/render to settle
+        await this.page.waitForLoadState('networkidle');
         await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(10000);
     }
 
     async verifyOrderReceived() {

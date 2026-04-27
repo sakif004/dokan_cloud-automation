@@ -16,7 +16,7 @@ export class StorefrontPage {
         this.page = page;
 
         // Shop link in header nav — exact match to avoid matching "Shop by Category" etc.
-        this.shopLink    = page.getByRole('link', { name: 'Shop', exact: true });
+        this.shopLink = page.getByRole('link', { name: 'Shop', exact: true });
         this.shopHeading = page.getByRole('heading', { name: 'Shop' });
 
         // Search box on the shop page
@@ -41,6 +41,9 @@ export class StorefrontPage {
         await this.shopLink.click();
         await this.page.waitForLoadState('domcontentloaded');
         await expect(this.shopHeading).toBeVisible({ timeout: 10000 });
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
     }
 
     /**
@@ -49,6 +52,9 @@ export class StorefrontPage {
     async searchProduct(name: string) {
         await this.searchInput.click();
         await this.searchInput.fill(name);
+        await this.page.waitForLoadState('networkidle');
+        await this.page.waitForLoadState('domcontentloaded');
+        await this.page.waitForTimeout(1000);
         // Wait for results to appear
         await expect(
             this.page.locator('div').filter({ hasText: new RegExp(`^${name}$`) }).first()
