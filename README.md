@@ -29,8 +29,8 @@ A production-ready automation testing framework built with **Playwright** and **
 ## ✨ Features
 
 ### 🎯 Core Capabilities
-- **Multi-Domain Testing**: Marketplace storefront (`*.flycom.shop`) and FlyCommerce Cloud (`app.flycommerce.com`)
-- **Role-Based Authentication**: Admin, Vendor, Customer, and Dokan Cloud app user authentication
+- **Multi-Domain Testing**: Marketplace storefront across environments (`*.flycom.shop`, `*.staging.dokandev.com`) and FlyCommerce Cloud (`app.flycommerce.com`)
+- **Role-Based Authentication**: Admin, Vendor, Customer, and FlyCommerce app user authentication
 - **Session Persistence**: Fast test execution with reusable authentication states
 - **E2E Marketplace Creation**: Complete marketplace onboarding and setup guide automation
 - **CRUD Operations**: Full coverage for Products, Categories, Brands, Collections, Vendors, Customers
@@ -101,7 +101,7 @@ My Dokan Automation/
 │   │   ├── vendorAuthPage.ts           # Vendor login
 │   │   └── productCreatePage.ts        # Product creation
 │   ├── app_store/                      # FlyCommerce Cloud pages (app.flycommerce.com)
-│   │   ├── dokanCloudLoginPage.ts      # Dokan Cloud login
+│   │   ├── flycommerceLoginPage.ts     # FlyCommerce login
 │   │   └── marketplaceOnboardingPage.ts # Marketplace creation flow
 │   ├── common/                         # Shared helpers
 │   │   └── chatManager.ts              # Chat widget handler
@@ -129,11 +129,12 @@ My Dokan Automation/
 │   │   └── e2eDeleteProductRelatedThings.spec.ts
 │   ├── fixtures/                       # Custom test fixtures
 │   │   └── auth.fixtures.ts            # Authentication fixtures
-│   ├── customer/                       # customerLogin, browseProducts, addToCart, checkout
+│   ├── customer/                       # Checkout journey-focused customer specs
 │   └── auth.setup.ts                   # Authentication setup script
 │
 ├── utils/                              # Utilities
-│   └── testData.ts                     # Environment variables loader
+│   ├── testData.ts                     # Environment variables loader
+│   └── ciLogger.ts                     # Structured CI log helper (`[timestamp] [scope] message`)
 │
 ├── playwright/                         # Playwright artifacts
 │   └── .auth/                          # Stored authentication states
@@ -147,6 +148,26 @@ My Dokan Automation/
 ├── PROJECT_CONTEXT.md                  # Detailed documentation
 └── README.md                           # This file
 ```
+
+---
+
+## 🧾 CI Logging Convention
+
+To make GitHub Actions output easier to debug, critical workflow phases use structured logs via `utils/ciLogger.ts`:
+
+```ts
+ciStep('customerJourney', 'Order confirmation detected');
+```
+
+Current workflow-critical coverage includes:
+- `setupFlycommerceAuth`
+- `marketplaceSetup`
+- `setupMarketplaceAdminAuth`
+- `marketplaceAdminSetupGuide`
+- `adminSeedSetup`
+- `setupAuth`
+- `vendorJourney`
+- `customerJourney`
 
 ---
 

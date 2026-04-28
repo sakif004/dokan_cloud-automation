@@ -3,6 +3,7 @@ import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Urls } from '../../utils/testData';
+import { ciStep } from '../../utils/ciLogger';
 
 /**
  * ================================================================================================
@@ -62,7 +63,7 @@ export const test = base.extend<AuthFixtures>({
 
     // ── Admin Fixture ─────────────────────────────────────────────────────────
     adminPage: async ({ browser }, use) => {
-        console.log('🔐 Loading Admin fixture...');
+        ciStep('fixtures', 'Loading admin fixture');
 
         const context = await browser.newContext({
             storageState: 'playwright/.auth/admin.json',
@@ -75,16 +76,16 @@ export const test = base.extend<AuthFixtures>({
         await page.waitForLoadState('domcontentloaded');
         await page.waitForTimeout(2000);
 
-        console.log('✅ Admin fixture ready');
+        ciStep('fixtures', 'Admin fixture ready');
         await use(new AdminPage(page));
 
-        console.log('🧹 Closing Admin context');
+        ciStep('fixtures', 'Closing admin context');
         await context.close();
     },
 
     // ── Vendor Fixture ────────────────────────────────────────────────────────
     vendorPage: async ({ browser }, use) => {
-        console.log('🔐 Loading Vendor fixture...');
+        ciStep('fixtures', 'Loading vendor fixture');
 
         const context = await browser.newContext({
             storageState: 'playwright/.auth/vendor.json',
@@ -96,21 +97,21 @@ export const test = base.extend<AuthFixtures>({
         await page.waitForLoadState('domcontentloaded');
         await page.waitForTimeout(2000);
 
-        console.log('✅ Vendor fixture ready');
+        ciStep('fixtures', 'Vendor fixture ready');
         await use(new VendorPage(page));
 
-        console.log('🧹 Closing Vendor context');
+        ciStep('fixtures', 'Closing vendor context');
         await context.close();
     },
 
     // ── Customer Fixture ──────────────────────────────────────────────────────
     customerPage: async ({ browser }, use) => {
-        console.log('🔐 Loading Customer fixture...');
+        ciStep('fixtures', 'Loading customer fixture');
 
         // Skip gracefully if credentials not configured
         const customerEmail = process.env.CUSTOMER_EMAIL;
         if (!customerEmail) {
-            console.log('⏭  customerPage skipped — CUSTOMER_EMAIL not set in .env');
+            ciStep('fixtures', 'Customer fixture skipped: CUSTOMER_EMAIL missing');
             const ctx = await browser.newContext();
             const pg  = await ctx.newPage();
             await use(new CustomerPage(pg, ctx));
@@ -121,8 +122,7 @@ export const test = base.extend<AuthFixtures>({
         // Skip gracefully if auth file not yet created
         const authFile = path.join(process.cwd(), 'playwright/.auth/customer.json');
         if (!fs.existsSync(authFile)) {
-            console.log('⏭  customerPage skipped — customer.json not found.');
-            console.log('    Run: setup → adminSeedSetup → setupAuth  in order.');
+            ciStep('fixtures', 'Customer fixture skipped: customer.json missing (run setup -> adminSeedSetup -> setupAuth)');
             const ctx = await browser.newContext();
             const pg  = await ctx.newPage();
             await use(new CustomerPage(pg, ctx));
@@ -136,20 +136,20 @@ export const test = base.extend<AuthFixtures>({
         // Navigate to storefront to confirm session is active (avoid networkidle — burns test timeout on SPAs)
         await page.goto(Urls.customerUrl, { waitUntil: 'domcontentloaded' });
 
-        console.log('✅ Customer fixture ready');
+        ciStep('fixtures', 'Customer fixture ready');
         await use(new CustomerPage(page, context));
 
-        console.log('🧹 Closing Customer context');
+        ciStep('fixtures', 'Closing customer context');
         await context.close();
     },
 
     // ── FlyCommerce App Fixture (formerly dokanCloudPage) ─────────────────────
     flycommercePage: async ({ browser }, use) => {
-        console.log('🔐 Loading FlyCommerce fixture...');
+        ciStep('fixtures', 'Loading FlyCommerce fixture');
 
         // Skip gracefully if credentials not configured
         if (!Urls.flycommerceEmail || !Urls.flycommercePassword) {
-            console.log('⚠️  FlyCommerce credentials not configured in .env — skipping fixture.');
+            ciStep('fixtures', 'FlyCommerce fixture skipped: credentials missing');
             const ctx = await browser.newContext();
             const pg  = await ctx.newPage();
             await use(new FlycommercePage(pg));
@@ -176,10 +176,10 @@ export const test = base.extend<AuthFixtures>({
         await page.waitForLoadState('domcontentloaded');
         await page.waitForTimeout(2000);
 
-        console.log('✅ FlyCommerce fixture ready');
+        ciStep('fixtures', 'FlyCommerce fixture ready');
         await use(new FlycommercePage(page));
 
-        console.log('🧹 Closing FlyCommerce context');
+        ciStep('fixtures', 'Closing FlyCommerce context');
         await context.close();
     },
 });

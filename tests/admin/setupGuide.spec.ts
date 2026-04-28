@@ -1,11 +1,13 @@
 import { test } from '../fixtures/auth.fixtures';
 import { SetupGuidePage } from '../../pages/admin/setupGuidePage';
 import { Urls } from '../../utils/testData';
+import { ciStep } from '../../utils/ciLogger';
 
 test.describe('Admin - Setup Guide', () => {
     test('Complete Setup Guide', async ({ adminPage }) => {
         // The setup guide can take time; extend the test timeout.
         test.setTimeout(180000);
+        ciStep('marketplaceAdminSetupGuide', 'Setup guide flow starting');
 
         // Navigate to the setup guide page using dynamic URL from environment
         const setupGuideUrl = `${Urls.adminUrl}/admin/setup-guide`;
@@ -15,6 +17,7 @@ test.describe('Admin - Setup Guide', () => {
         });
         await adminPage.page.waitForLoadState('networkidle');
         await adminPage.page.waitForTimeout(2000);
+        ciStep('marketplaceAdminSetupGuide', 'Setup guide page loaded');
 
         // Initialize page object
         const setupGuidePage = new SetupGuidePage(adminPage.page);
@@ -36,5 +39,6 @@ test.describe('Admin - Setup Guide', () => {
                 percentage: '0.5',
             },
         });
+        ciStep('marketplaceAdminSetupGuide', 'Setup guide completed');
     });
 });

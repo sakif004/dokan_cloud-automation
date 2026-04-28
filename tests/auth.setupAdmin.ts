@@ -1,5 +1,6 @@
 import { test as setup, expect } from '@playwright/test';
 import { Urls } from '../utils/testData';
+import { ciStep } from '../utils/ciLogger';
 
 /**
  * ================================================================================================
@@ -16,7 +17,7 @@ const adminAuthFile = 'playwright/.auth/admin.json';
 setup('authenticate marketplace admin', async ({ page }) => {
     setup.setTimeout(90000);
 
-    console.log('🔐 Marketplace Admin Authentication Starting...');
+    ciStep('setupMarketplaceAdminAuth', 'Marketplace admin auth starting');
 
     await page.goto(Urls.adminUrl + '/admin/login', { timeout: 30000 });
     await page.waitForURL('**/admin/login', { timeout: 15000 });
@@ -27,13 +28,15 @@ setup('authenticate marketplace admin', async ({ page }) => {
     await emailInput.fill(Urls.adminEmail);
     await page.getByRole('textbox', { name: 'Password' }).fill(Urls.adminPassword);
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    ciStep('setupMarketplaceAdminAuth', 'Sign In submitted');
 
     await expect(page).not.toHaveURL(/\/admin\/login\/?$/i, { timeout: 30000 });
     await expect(page).toHaveURL(/\/admin(\/.*)?$/i, { timeout: 30000 });
+    ciStep('setupMarketplaceAdminAuth', 'Admin dashboard route reached');
 
     // Add one stable post-login UI marker without relying on a specific heading node.
     await expect(page.getByRole('link', { name: /dashboard/i }).first()).toBeVisible({ timeout: 30000 });
 
     await page.context().storageState({ path: adminAuthFile });
-    console.log(`💾 Marketplace admin session saved to: ${adminAuthFile}\n`);
+    ciStep('setupMarketplaceAdminAuth', `Session saved: ${adminAuthFile}`);
 });

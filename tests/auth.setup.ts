@@ -1,6 +1,7 @@
 // tests/auth.setup.ts
 import { test as setup, expect } from '@playwright/test';
 import { Urls } from '../utils/testData';
+import { ciStep } from '../utils/ciLogger';
 
 /**
  * ================================================================================================
@@ -24,12 +25,11 @@ const flycommerceAuthFile = 'playwright/.auth/flycommerce.json';
 setup('authenticate flycommerce', async ({ page }) => {
     setup.setTimeout(60000);
 
-    console.log('🔐 FlyCommerce App Authentication Starting...');
+    ciStep('setupFlycommerceAuth', 'FlyCommerce auth starting');
 
     // Skip gracefully if credentials not configured
     if (!Urls.flycommerceEmail || !Urls.flycommercePassword) {
-        console.log('⚠️  FlyCommerce credentials not configured in .env — skipping');
-        console.log('    Add DOKAN_CLOUD_EMAIL and DOKAN_CLOUD_PASSWORD to your .env file');
+        ciStep('setupFlycommerceAuth', 'Skipped: DOKAN_CLOUD_EMAIL/DOKAN_CLOUD_PASSWORD missing');
         return;
     }
 
@@ -38,26 +38,26 @@ setup('authenticate flycommerce', async ({ page }) => {
     await page.waitForURL('**/login');
     await page.waitForLoadState('domcontentloaded');
 
-    console.log('📄 FlyCommerce login page loaded');
+    ciStep('setupFlycommerceAuth', 'Login page loaded');
 
     await page.getByRole('textbox', { name: 'Enter your email' }).click();
     await page.getByRole('textbox', { name: 'Enter your email' }).fill(Urls.flycommerceEmail);
-    console.log(`✍️  FlyCommerce email filled: ${Urls.flycommerceEmail}`);
+    ciStep('setupFlycommerceAuth', 'Email filled');
 
     await page.getByRole('textbox', { name: 'Write your password' }).click();
     await page.getByRole('textbox', { name: 'Write your password' }).fill(Urls.flycommercePassword);
-    console.log('✍️  FlyCommerce password filled');
+    ciStep('setupFlycommerceAuth', 'Password filled');
 
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-    console.log('🖱️  Sign In button clicked');
+    ciStep('setupFlycommerceAuth', 'Sign In submitted');
 
     // Wait for My Stores heading — more reliable than networkidle
     await expect(page.getByRole('heading', { name: 'My Stores' })).toBeVisible({ timeout: 30000 });
-    console.log('✅ FlyCommerce logged in successfully');
+    ciStep('setupFlycommerceAuth', 'Login successful');
 
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
     await page.context().storageState({ path: flycommerceAuthFile });
-    console.log(`💾 FlyCommerce session saved to: ${flycommerceAuthFile}\n`);
+    ciStep('setupFlycommerceAuth', `Session saved: ${flycommerceAuthFile}`);
 });

@@ -1,6 +1,7 @@
 // tests/auth.setupUsers.ts
 import { test as setup, expect } from '@playwright/test';
 import { Urls } from '../utils/testData';
+import { ciStep } from '../utils/ciLogger';
 
 /**
  * ================================================================================================
@@ -28,11 +29,11 @@ const vendorAuthFile = 'playwright/.auth/vendor.json';
 setup('authenticate vendor', async ({ browser }) => {
     setup.setTimeout(90000);
 
-    console.log('🔐 Vendor Authentication Starting...');
+    ciStep('setupAuth', 'Vendor auth starting');
 
     const vendorEmail = process.env.VENDOR_EMAIL;
     if (!vendorEmail) {
-        console.log('⏭  VENDOR_EMAIL not set in .env — skipping vendor auth');
+        ciStep('setupAuth', 'Vendor auth skipped: VENDOR_EMAIL missing');
         return;
     }
 
@@ -44,31 +45,31 @@ setup('authenticate vendor', async ({ browser }) => {
         await page.waitForURL('**/vendor/login', { timeout: 15000 });
         await page.waitForLoadState('domcontentloaded');
 
-        console.log('📄 Vendor login page loaded');
+        ciStep('setupAuth', 'Vendor login page loaded');
 
         await page.locator('#login-email').fill(vendorEmail);
-        console.log(`✍️  Vendor email filled: ${vendorEmail}`);
+        ciStep('setupAuth', 'Vendor email filled');
 
         await page.locator('#login-password').fill(process.env.VENDOR_PASSWORD ?? '');
-        console.log('✍️  Vendor password filled');
+        ciStep('setupAuth', 'Vendor password filled');
 
         // Accept Privacy Policy if visible
         const privacyPolicy = page.locator("(//button[@type='button'][text()='Accept'])[1]");
         if (await privacyPolicy.isVisible({ timeout: 2000 }).catch(() => false)) {
             await privacyPolicy.click();
-            console.log('✅ Privacy Policy accepted');
+            ciStep('setupAuth', 'Vendor privacy policy accepted');
         }
 
         await expect(page.locator("//button[@type='submit']")).toBeVisible({ timeout: 10000 });
         await page.locator("//button[@type='submit']").click();
-        console.log('🖱️  Sign In button clicked');
+        ciStep('setupAuth', 'Vendor Sign In submitted');
 
         await page.waitForURL('**/vendor', { timeout: 20000 });
         await expect(page).toHaveURL(/\/vendor$/);
-        console.log('✅ Vendor logged in successfully');
+        ciStep('setupAuth', 'Vendor login successful');
 
         await context.storageState({ path: vendorAuthFile });
-        console.log(`💾 Vendor session saved to: ${vendorAuthFile}\n`);
+        ciStep('setupAuth', `Vendor session saved: ${vendorAuthFile}`);
 
     } finally {
         await context.close().catch(() => { });
@@ -83,11 +84,11 @@ const customerAuthFile = 'playwright/.auth/customer.json';
 setup('authenticate customer', async ({ browser }) => {
     setup.setTimeout(90000);
 
-    console.log('🔐 Customer Authentication Starting...');
+    ciStep('setupAuth', 'Customer auth starting');
 
     const customerEmail = process.env.CUSTOMER_EMAIL;
     if (!customerEmail || !Urls.customerUrl) {
-        console.log('⏭  CUSTOMER_EMAIL or CUSTOMER_URL not set in .env — skipping customer auth');
+        ciStep('setupAuth', 'Customer auth skipped: CUSTOMER_EMAIL/CUSTOMER_URL missing');
         return;
     }
 
@@ -99,31 +100,31 @@ setup('authenticate customer', async ({ browser }) => {
         await page.waitForURL('**/login', { timeout: 15000 });
         await page.waitForLoadState('domcontentloaded');
 
-        console.log('📄 Customer login page loaded');
+        ciStep('setupAuth', 'Customer login page loaded');
 
         await page.locator('#reg-email').fill(customerEmail);
-        console.log(`✍️  Customer email filled: ${customerEmail}`);
+        ciStep('setupAuth', 'Customer email filled');
 
         await page.locator('#login-password').fill(process.env.CUSTOMER_PASSWORD ?? '');
-        console.log('✍️  Customer password filled');
+        ciStep('setupAuth', 'Customer password filled');
 
         // Accept Privacy Policy if visible
         const privacyPolicy = page.locator("(//button[@type='button'][text()='Accept'])[1]");
         if (await privacyPolicy.isVisible({ timeout: 2000 }).catch(() => false)) {
             await privacyPolicy.click();
-            console.log('✅ Privacy Policy accepted');
+            ciStep('setupAuth', 'Customer privacy policy accepted');
         }
 
         await expect(page.locator("//button[normalize-space(text())='Sign in']")).toBeVisible({ timeout: 10000 });
         await page.locator("//button[normalize-space(text())='Sign in']").click();
-        console.log('🖱️  Sign In button clicked');
+        ciStep('setupAuth', 'Customer Sign In submitted');
 
         await page.waitForURL('**/customers/account', { timeout: 20000 });
         await expect(page).toHaveURL(/\/customers\/account$/);
-        console.log('✅ Customer logged in successfully');
+        ciStep('setupAuth', 'Customer login successful');
 
         await context.storageState({ path: customerAuthFile });
-        console.log(`💾 Customer session saved to: ${customerAuthFile}\n`);
+        ciStep('setupAuth', `Customer session saved: ${customerAuthFile}`);
 
     } finally {
         await context.close().catch(() => { });

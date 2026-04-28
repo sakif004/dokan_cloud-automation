@@ -24,11 +24,13 @@ import { AttributeManagementPage } from '../../pages/admin/productAttributePage'
 import { VendorManagementPage } from '../../pages/admin/vendorsPage';
 import { CustomerManagementPage } from '../../pages/admin/customerManagementPage';
 import { SeedData } from '../../utils/testData';
+import { ciStep } from '../../utils/ciLogger';
 
 test.describe.serial('Admin - Seed Data Setup', () => {
 
     // ─── Brand ────────────────────────────────────────────────────────────────
     test('Seed: create Brand', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating seed brand');
         // Initialize page object
         const brandPage = new BrandManagementPage(adminPage.page);
 
@@ -37,10 +39,12 @@ test.describe.serial('Admin - Seed Data Setup', () => {
 
         // Verify success
         await brandPage.verifyBrandCreatedSuccessfully();
+        ciStep('adminSeedSetup', 'Seed brand created');
     });
 
     // ─── Category ─────────────────────────────────────────────────────────────
     test('Seed: create Category', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating seed category');
         // Initialize page object
         const categoryPage = new CategoryManagementPage(adminPage.page);
 
@@ -49,10 +53,12 @@ test.describe.serial('Admin - Seed Data Setup', () => {
 
         // Verify success
         await categoryPage.verifyCategoryCreatedSuccessfully();
+        ciStep('adminSeedSetup', 'Seed category created');
     });
 
     // ─── Collection ───────────────────────────────────────────────────────────
     test('Seed: create Collection', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating seed collection');
         // Initialize page object
         const collectionPage = new CollectionManagementPage(adminPage.page);
 
@@ -61,19 +67,23 @@ test.describe.serial('Admin - Seed Data Setup', () => {
 
         // Verify success
         await collectionPage.verifyCollectionCreatedSuccessfully();
+        ciStep('adminSeedSetup', 'Seed collection created');
     });
 
     // ─── Attribute ────────────────────────────────────────────────────────────
     test('Seed: create Attribute', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating seed attribute');
         // Initialize page object
         const attributePage = new AttributeManagementPage(adminPage.page);
 
         // Create fixed attribute — Multiselect with sizes S, M, L, XL
         await attributePage.createAttribute(SeedData.attribute);
+        ciStep('adminSeedSetup', 'Seed attribute created');
     });
 
     // ─── Journey Vendor Account ────────────────────────────────────────────────
     test('Seed: create journey Vendor account', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating journey vendor account');
         // Initialize page object
         const vendorPage = new VendorManagementPage(adminPage.page);
 
@@ -95,10 +105,12 @@ test.describe.serial('Admin - Seed Data Setup', () => {
 
         // Verify vendor created successfully
         await vendorPage.verifyVendorCreatedSuccessfully();
+        ciStep('adminSeedSetup', 'Journey vendor account created');
     });
 
     // ─── Journey Customer Account ──────────────────────────────────────────────
     test('Seed: create journey Customer account', async ({ adminPage }) => {
+        ciStep('adminSeedSetup', 'Creating journey customer account');
         // Initialize page object
         const customerPage = new CustomerManagementPage(adminPage.page);
 
@@ -117,6 +129,7 @@ test.describe.serial('Admin - Seed Data Setup', () => {
 
         // Verify customer created successfully
         await customerPage.verifyCustomerCreatedSuccessfully();
+        ciStep('adminSeedSetup', 'Journey customer account created');
     });
 
 });

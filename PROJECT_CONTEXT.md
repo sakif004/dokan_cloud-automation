@@ -5,8 +5,8 @@
 This is an **end-to-end automation testing framework** for the **Dokan e-commerce platform** using **Playwright** and **TypeScript**. The project follows a **Page Object Model (POM)** architecture with custom fixtures for authentication management across multiple roles and domains.
 
 ### Key Features
-- **Multi-Domain Testing**: Storefront (`*.flycom.shop`) and FlyCommerce Cloud (`app.flycommerce.com`)
-- **Role-Based Authentication**: Admin, Vendor, Customer, and Dokan Cloud App user authentication
+- **Multi-Domain Testing**: Storefront (prod/staging domains such as `*.flycom.shop`, `*.staging.dokandev.com`) and FlyCommerce Cloud (`app.flycommerce.com`)
+- **Role-Based Authentication**: Admin, Vendor, Customer, and FlyCommerce App user authentication
 - **E2E Marketplace Creation**: Complete marketplace onboarding and setup guide automation
 - **CRUD Operations**: Full coverage for Products, Categories, Brands, Collections, Vendors, and Customers
 - **Session Management**: Persistent authentication states for fast test execution
@@ -16,6 +16,17 @@ This is an **end-to-end automation testing framework** for the **Dokan e-commerc
 - **TypeScript** - Programming language
 - **dotenv** (^17.2.3) - Environment variable management
 - **Node.js** - Runtime environment
+
+---
+
+## 🔄 Latest State Notes (Apr 2026)
+
+- Workflow-critical projects run in this order:
+  `setupFlycommerceAuth -> marketplaceSetup -> setupMarketplaceAdminAuth -> marketplaceAdminSetupGuide -> adminSeedSetup -> setupAuth -> vendorJourney -> customerJourney`.
+- `marketplaceOnboarding.spec.ts` validates Preview Store URL using the host from `Urls.customerUrl` so the same spec works across prod and staging.
+- Customer storefront + checkout flows were hardened for strict mode and dynamic UI structure (semantic `main`-scoped product locators, disambiguated shipping heading handling).
+- Structured CI logs are standardized with `utils/ciLogger.ts` using:
+  `ciStep(scope, message)` => `[timestamp] [scope] message`.
 
 ---
 
@@ -196,9 +207,10 @@ My Dokan Automation/
 │   ├── testData.ts                     # Environment variables & test data loader
 │   │                                   #   (exports Urls object with all credentials/URLs)
 │   │                                   #   (exports SeedData — fixed entity names for product tests)
-│   └── fakerData.ts                    # Random test data generators using @faker-js/faker
+│   ├── fakerData.ts                    # Random test data generators using @faker-js/faker
 │                                       #   (randomEmail, randomStoreName, randomAttributeName,
 │                                       #    generateVendorData, generateCustomerData, etc.)
+│   └── ciLogger.ts                     # Shared structured CI logger for workflow phases
 │
 ├── playwright/                         # Playwright artifacts
 │   └── .auth/                          # Stored authentication states (gitignored)

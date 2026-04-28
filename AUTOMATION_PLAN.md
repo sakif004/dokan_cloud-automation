@@ -23,6 +23,16 @@
 
 ---
 
+## 📌 Current State (Apr 2026)
+
+- Final 8-phase workflow is stable and green in GitHub Actions:
+  `setupFlycommerceAuth -> marketplaceSetup -> setupMarketplaceAdminAuth -> marketplaceAdminSetupGuide -> adminSeedSetup -> setupAuth -> vendorJourney -> customerJourney`.
+- `marketplaceOnboarding.spec.ts` storefront URL verification is now environment-aware (matches host from configured `CUSTOMER_URL`, not hardcoded prod domain).
+- Customer journey reliability improved with locator hardening in storefront/checkout flows (semantic `main`-scoped heading/link usage and strict-mode-safe shipping heading handling).
+- Structured CI logs are implemented via `utils/ciLogger.ts` across all workflow-critical projects to improve troubleshooting readability.
+
+---
+
 ## 📁 Current Project Structure
 
 ```
@@ -162,7 +172,7 @@ npx playwright test --project=customerJourney
 | 1.2 | Re-run auth setup after URL change | `auth.setup.ts` | ✅ Done | Admin confirmed working |
 | 1.3 | Update `marketplaceOnboardingPage.ts` for new UI flow | `pages/app_store/marketplaceOnboardingPage.ts` | ✅ Done | New 4-step wizard, popup handling |
 | 1.4 | Fix `verifyAddressFieldsPopulated` — new `#state` locator | `pages/app_store/marketplaceOnboardingPage.ts` | ✅ Done | `divisionDropdownTrigger` + `#state` |
-| 1.5 | Add "Preview Store" verification in spec | `tests/app_store/marketplaceOnboarding.spec.ts` | ✅ Done | `.flycom.shop` URL pattern check |
+| 1.5 | Add "Preview Store" verification in spec | `tests/app_store/marketplaceOnboarding.spec.ts` | ✅ Done | Environment-aware host check from `CUSTOMER_URL` |
 | 1.6 | Verify `setupGuide.spec.ts` locators after rebranding | `pages/admin/setupGuidePage.ts` | ✅ Done | `businessDetailsLink` → `getByRole('tab')`, `brandLink` → `getByRole('tab')`, `saveButton` → `Save Changes` |
 | 1.7 | Verify all admin page locators after rebranding | `pages/admin/*.ts` | ⬜ Pending | Run `adminSeedSetup` + `adminCRUD` and fix failures |
 | 1.8 | Enable `dependencies` in `playwright.config.ts` | `playwright.config.ts` | ⬜ Pending | Uncomment setup dependencies |

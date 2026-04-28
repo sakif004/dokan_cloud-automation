@@ -1,10 +1,12 @@
 import { test } from '../fixtures/auth.fixtures';
 import { VendorProductPage } from '../../pages/vendor/productCreatePage';
 import { SeedData } from '../../utils/testData';
+import { ciStep } from '../../utils/ciLogger';
 
 test.describe('Vendor - Product Management', () => {
 
     test('Create Product', async ({ vendorPage }) => {
+        ciStep('vendorJourney', 'Vendor product creation starting');
         const productPage = new VendorProductPage(vendorPage.page);
 
         // Use SeedData for fixed entities — these were created by adminSeedSetup (seedData.spec.ts)
@@ -27,9 +29,11 @@ test.describe('Vendor - Product Management', () => {
             brand:         SeedData.brand.name,
             collection:    SeedData.collection.name,
         });
+        ciStep('vendorJourney', `Product created request submitted: ${SeedData.product.name}`);
 
         // Verify product was created successfully
         await productPage.verifyProductCreatedSuccessfully();
+        ciStep('vendorJourney', 'Product creation verified');
     });
 
 });
