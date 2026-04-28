@@ -95,11 +95,11 @@ jobs:
         run: npx playwright test --project=setupAuth
 
       # ── Phase 4: Vendor journey (product creation) ───────────────────────────
-      - name: Run Vendor Journey
+      - name: Phase 4 — Run Vendor Journey
         run: npx playwright test --project=vendorJourney
 
       # ── Phase 5: Customer checkout journey ────────────────────────────────────
-      - name: Run Customer Journey
+      - name: Phase 5 — Run Customer Journey
         run: npx playwright test --project=customerJourney
 
       # ── Upload HTML report ────────────────────────────────────────────────────
