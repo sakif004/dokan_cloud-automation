@@ -74,25 +74,25 @@ jobs:
       - name: Phase 1A — FlyCommerce auth
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupFlycommerceAuth.json
-        run: npx playwright test --project=setupFlycommerceAuth --reporter=line,json
+        run: npx playwright test --project=setupFlycommerceAuth --reporter=line,json,html
 
       # ── Phase 1B: Marketplace onboarding (creates marketplace admin) ─────────
       - name: Phase 1B — Marketplace onboarding
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/marketplaceSetup.json
-        run: npx playwright test --project=marketplaceSetup --reporter=line,json
+        run: npx playwright test --project=marketplaceSetup --reporter=line,json,html
 
       # ── Phase 1C: Marketplace admin auth (after marketplace exists) ──────────
       - name: Phase 1C — Marketplace admin auth
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupMarketplaceAdminAuth.json
-        run: npx playwright test --project=setupMarketplaceAdminAuth --reporter=line,json
+        run: npx playwright test --project=setupMarketplaceAdminAuth --reporter=line,json,html
 
       # ── Phase 1D: Marketplace setup guide ─────────────────────────────────────
       - name: Phase 1D — Marketplace setup guide
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/marketplaceAdminSetupGuide.json
-        run: npx playwright test --project=marketplaceAdminSetupGuide --reporter=line,json
+        run: npx playwright test --project=marketplaceAdminSetupGuide --reporter=line,json,html
 
       # ── Phase 2: Seed data + journey accounts ─────────────────────────────────
       # Creates Brand, Category, Collection, Attribute, journey Vendor + Customer.
@@ -100,7 +100,7 @@ jobs:
       - name: Phase 2 — Create seed data + journey accounts
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/adminSeedSetup.json
-        run: npx playwright test --project=adminSeedSetup --reporter=line,json
+        run: npx playwright test --project=adminSeedSetup --reporter=line,json,html
         continue-on-error: true
 
       # ── Phase 3: Vendor + Customer auth ──────────────────────────────────────
@@ -108,19 +108,19 @@ jobs:
       - name: Phase 3 — Vendor + Customer auth
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupAuth.json
-        run: npx playwright test --project=setupAuth --reporter=line,json
+        run: npx playwright test --project=setupAuth --reporter=line,json,html
 
       # ── Phase 4: Vendor journey (product creation) ───────────────────────────
       - name: Phase 4 — Run Vendor Journey
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/vendorJourney.json
-        run: npx playwright test --project=vendorJourney --reporter=line,json
+        run: npx playwright test --project=vendorJourney --reporter=line,json,html
 
       # ── Phase 5: Customer checkout journey ────────────────────────────────────
       - name: Phase 5 — Run Customer Journey
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/customerJourney.json
-        run: npx playwright test --project=customerJourney --reporter=line,json
+        run: npx playwright test --project=customerJourney --reporter=line,json,html
 
       # ── Upload HTML report ────────────────────────────────────────────────────
       - uses: actions/upload-artifact@v4
@@ -129,6 +129,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
 
       # ── Upload raw test artifacts (traces/videos/screenshots) ───────────────
       - uses: actions/upload-artifact@v4
@@ -137,6 +138,7 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
       # ── Upload per-phase JSON summaries ──────────────────────────────────────
       - uses: actions/upload-artifact@v4
