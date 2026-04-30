@@ -104,8 +104,26 @@ jobs:
 
       # ── Upload HTML report ────────────────────────────────────────────────────
       - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: ${{ always() }}
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 7
+
+      # ── Upload raw test artifacts (traces/videos/screenshots) ───────────────
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+      # ── Job summary (shown in GitHub Actions run) ───────────────────────────
+      - name: Publish test summary
+        if: ${{ always() }}
+        run: |
+          echo "## Playwright Workflow Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Job status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- HTML report artifact: \`playwright-report\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Raw artifacts: \`test-results\` (traces/screenshots/videos)" >> "$GITHUB_STEP_SUMMARY"
