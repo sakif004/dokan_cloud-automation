@@ -66,41 +66,61 @@ jobs:
       - name: Create .auth directory
         run: mkdir -p playwright/.auth
 
+      # ── Create CI results directory (JSON summaries per phase) ───────────────
+      - name: Create CI results directory
+        run: mkdir -p ci-results
+
       # ── Phase 1A: FlyCommerce app admin auth ─────────────────────────────────
       - name: Phase 1A — FlyCommerce auth
-        run: npx playwright test --project=setupFlycommerceAuth
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupFlycommerceAuth.json
+        run: npx playwright test --project=setupFlycommerceAuth --reporter=line,json
 
       # ── Phase 1B: Marketplace onboarding (creates marketplace admin) ─────────
       - name: Phase 1B — Marketplace onboarding
-        run: npx playwright test --project=marketplaceSetup
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/marketplaceSetup.json
+        run: npx playwright test --project=marketplaceSetup --reporter=line,json
 
       # ── Phase 1C: Marketplace admin auth (after marketplace exists) ──────────
       - name: Phase 1C — Marketplace admin auth
-        run: npx playwright test --project=setupMarketplaceAdminAuth
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupMarketplaceAdminAuth.json
+        run: npx playwright test --project=setupMarketplaceAdminAuth --reporter=line,json
 
       # ── Phase 1D: Marketplace setup guide ─────────────────────────────────────
       - name: Phase 1D — Marketplace setup guide
-        run: npx playwright test --project=marketplaceAdminSetupGuide
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/marketplaceAdminSetupGuide.json
+        run: npx playwright test --project=marketplaceAdminSetupGuide --reporter=line,json
 
       # ── Phase 2: Seed data + journey accounts ─────────────────────────────────
       # Creates Brand, Category, Collection, Attribute, journey Vendor + Customer.
       # continue-on-error: entities may already exist on a persistent test environment.
       - name: Phase 2 — Create seed data + journey accounts
-        run: npx playwright test --project=adminSeedSetup
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/adminSeedSetup.json
+        run: npx playwright test --project=adminSeedSetup --reporter=line,json
         continue-on-error: true
 
       # ── Phase 3: Vendor + Customer auth ──────────────────────────────────────
       # Saves vendor.json + customer.json (accounts now exist from Phase 2)
       - name: Phase 3 — Vendor + Customer auth
-        run: npx playwright test --project=setupAuth
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/setupAuth.json
+        run: npx playwright test --project=setupAuth --reporter=line,json
 
       # ── Phase 4: Vendor journey (product creation) ───────────────────────────
       - name: Phase 4 — Run Vendor Journey
-        run: npx playwright test --project=vendorJourney
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/vendorJourney.json
+        run: npx playwright test --project=vendorJourney --reporter=line,json
 
       # ── Phase 5: Customer checkout journey ────────────────────────────────────
       - name: Phase 5 — Run Customer Journey
-        run: npx playwright test --project=customerJourney
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ci-results/customerJourney.json
+        run: npx playwright test --project=customerJourney --reporter=line,json
 
       # ── Upload HTML report ────────────────────────────────────────────────────
       - uses: actions/upload-artifact@v4
@@ -118,12 +138,74 @@ jobs:
           path: test-results/
           retention-days: 7
 
+      # ── Upload per-phase JSON summaries ──────────────────────────────────────
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ci-results
+          path: ci-results/
+          retention-days: 7
+
       # ── Job summary (shown in GitHub Actions run) ───────────────────────────
       - name: Publish test summary
         if: ${{ always() }}
         run: |
-          echo "## Playwright Workflow Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Job status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
-          echo "- HTML report artifact: \`playwright-report\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Raw artifacts: \`test-results\` (traces/screenshots/videos)" >> "$GITHUB_STEP_SUMMARY"
+          node <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          const dir = path.join(process.cwd(), 'ci-results');
+          const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort() : [];
+
+          let md = '## Playwright Workflow Summary\n\n';
+          md += `- Job status: **${process.env.JOB_STATUS || 'unknown'}**\n`;
+          md += '- HTML report artifact: `playwright-report`\n';
+          md += '- Raw artifacts: `test-results` (traces/screenshots/videos)\n';
+          md += '- JSON summaries artifact: `ci-results`\n\n';
+
+          if (!files.length) {
+            md += '_No JSON summary files found._\n';
+            fs.appendFileSync(summaryPath, md);
+            process.exit(0);
+          }
+
+          md += '| Phase | Total | Passed | Failed | Flaky | Skipped | Duration |\n';
+          md += '|---|---:|---:|---:|---:|---:|---:|\n';
+
+          const totals = { total: 0, passed: 0, failed: 0, flaky: 0, skipped: 0, durationMs: 0 };
+
+          for (const file of files) {
+            const full = path.join(dir, file);
+            try {
+              const json = JSON.parse(fs.readFileSync(full, 'utf8'));
+              const stats = json.stats || {};
+              const passed = Number(stats.expected || 0);
+              const failed = Number(stats.unexpected || 0);
+              const flaky = Number(stats.flaky || 0);
+              const skipped = Number(stats.skipped || 0);
+              const total = passed + failed + flaky + skipped;
+              const durationMs = Number(stats.duration || 0);
+              const durationSec = (durationMs / 1000).toFixed(1);
+              const phase = file.replace(/\.json$/, '');
+
+              totals.total += total;
+              totals.passed += passed;
+              totals.failed += failed;
+              totals.flaky += flaky;
+              totals.skipped += skipped;
+              totals.durationMs += durationMs;
+
+              md += `| ${phase} | ${total} | ${passed} | ${failed} | ${flaky} | ${skipped} | ${durationSec}s |\n`;
+            } catch {
+              md += `| ${file} | - | - | - | - | - | parse-error |\n`;
+            }
+          }
+
+          const totalDurationSec = (totals.durationMs / 1000).toFixed(1);
+          md += `| **Total** | **${totals.total}** | **${totals.passed}** | **${totals.failed}** | **${totals.flaky}** | **${totals.skipped}** | **${totalDurationSec}s** |\n`;
+
+          fs.appendFileSync(summaryPath, md);
+          EOF
+        env:
+          JOB_STATUS: ${{ job.status }}
