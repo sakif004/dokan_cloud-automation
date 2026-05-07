@@ -6,7 +6,7 @@ A production-ready automation testing framework built with **Playwright** and **
 
 [![Playwright](https://img.shields.io/badge/Playwright-1.56.1-45ba4b?logo=playwright)](https://playwright.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-14%2B-339933?logo=node.js)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](https://nodejs.org/)
 
 ---
 
@@ -45,7 +45,7 @@ A production-ready automation testing framework built with **Playwright** and **
 ### 🚀 Test Coverage
 - **Admin Operations**: Product management, vendor creation, customer management, setup guide
 - **Vendor Operations**: Product creation with images and details
-- **App Store Operations**: Marketplace onboarding on Dokan Cloud
+- **App Store Operations**: Marketplace onboarding on FlyCommerce app (`app.flycommerce.com`)
 - **E2E Workflows**: Complete marketplace creation and configuration flows
 - **Cleanup Operations**: Automated deletion of test data
 
@@ -123,14 +123,16 @@ My Dokan Automation/
 │   ├── vendor/                         # Vendor test suites
 │   │   ├── vendorLogin.spec.ts
 │   │   └── productCreate.spec.ts
-│   ├── app_store/                      # Dokan Cloud tests
+│   ├── app_store/                      # FlyCommerce app tests
 │   │   └── marketplaceOnboarding.spec.ts
 │   ├── e2e/                            # End-to-end workflows
 │   │   └── e2eDeleteProductRelatedThings.spec.ts
 │   ├── fixtures/                       # Custom test fixtures
 │   │   └── auth.fixtures.ts            # Authentication fixtures
 │   ├── customer/                       # Checkout journey-focused customer specs
-│   └── auth.setup.ts                   # Authentication setup script
+│   ├── auth.setup.ts                   # Phase 1A auth (FlyCommerce app admin)
+│   ├── auth.setupAdmin.ts              # Phase 1C auth (marketplace admin)
+│   └── auth.setupUsers.ts              # Phase 3 auth (vendor + customer)
 │
 ├── utils/                              # Utilities
 │   ├── testData.ts                     # Environment variables loader
@@ -763,6 +765,6 @@ For issues, questions, or contributions:
 
 ---
 
-**Last Updated:** April 2026
+**Last Updated:** May 2026
 **Framework Version:** Playwright 1.56.1  
 **TypeScript Version:** 5.x

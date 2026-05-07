@@ -200,7 +200,8 @@ My Dokan Automation/
 │   ├── fixtures/                       # Custom test fixtures
 │   │   └── auth.fixtures.ts            # Authentication fixtures for all roles
 │   │                                   #   (adminPage, vendorPage, customerPage, flycommercePage)
-│   ├── auth.setup.ts                   # Phase 1 auth: Admin + FlyCommerce (always runs first)
+│   ├── auth.setup.ts                   # Phase 1A auth: FlyCommerce app admin
+│   ├── auth.setupAdmin.ts              # Phase 1C auth: marketplace admin (after marketplace creation)
 │   └── auth.setupUsers.ts              # Phase 3 auth: Vendor + Customer (runs after adminSeedSetup)
 │
 ├── utils/                              # Utility files
@@ -814,16 +815,19 @@ When working on this project, refer to:
   - Exports `Urls` object with all credentials and URLs
   - Loaded from `.env` file via `dotenv`
   
-- **`tests/auth.setup.ts`** - Authentication setup script
-  - Creates session files for all roles
-  - Saves to `playwright/.auth/*.json`
+- **`tests/auth.setup.ts`** - FlyCommerce app admin authentication (Phase 1A)
+  - Saves to `playwright/.auth/flycommerce.json`
+- **`tests/auth.setupAdmin.ts`** - Marketplace admin authentication (Phase 1C)
+  - Saves to `playwright/.auth/admin.json`
+- **`tests/auth.setupUsers.ts`** - Journey vendor + customer authentication (Phase 3)
+  - Saves to `playwright/.auth/vendor.json` and `playwright/.auth/customer.json`
   
 - **`playwright.config.ts`** - Playwright configuration
   - Defines staged projects: `setupFlycommerceAuth`, `marketplaceSetup`, `setupMarketplaceAdminAuth`, `marketplaceAdminSetupGuide`, `adminSeedSetup`, `setupAuth`, `vendorJourney`, `customerJourney`
   - Test matching patterns, timeouts, reporters
   
-- **`pages/app_store/`** - FlyCommerce Cloud (app.flycommerce.com) page objects
-  - `dokanCloudLoginPage.ts` - Login to Dokan Cloud
+- **`pages/app_store/`** - FlyCommerce app (`app.flycommerce.com`) page objects
+  - `flycommerceLoginPage.ts` - Login to FlyCommerce app
   - `marketplaceOnboardingPage.ts` - Marketplace creation flow
   
 - **`pages/admin/setupGuidePage.ts`** - Post-marketplace setup guide
@@ -977,7 +981,7 @@ When working on this project, refer to:
 
 ---
 
-**Last Updated:** April 2025 (Session 5)  
+**Last Updated:** May 2026  
 **Framework Version:** Playwright 1.56.1  
 **Maintainer:** Follow these patterns when adding new features or refactoring existing code
 

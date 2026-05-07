@@ -23,13 +23,19 @@
 
 ---
 
-## 📌 Current State (Apr 2026)
+## 📌 Current State (May 2026)
 
 - Final 8-phase workflow is stable and green in GitHub Actions:
   `setupFlycommerceAuth -> marketplaceSetup -> setupMarketplaceAdminAuth -> marketplaceAdminSetupGuide -> adminSeedSetup -> setupAuth -> vendorJourney -> customerJourney`.
 - `marketplaceOnboarding.spec.ts` storefront URL verification is now environment-aware (matches host from configured `CUSTOMER_URL`, not hardcoded prod domain).
 - Customer journey reliability improved with locator hardening in storefront/checkout flows (semantic `main`-scoped heading/link usage and strict-mode-safe shipping heading handling).
 - Structured CI logs are implemented via `utils/ciLogger.ts` across all workflow-critical projects to improve troubleshooting readability.
+- CI workflow now publishes:
+  - `playwright-report` artifact (HTML)
+  - `test-results` artifact (traces/screenshots/videos)
+  - `ci-results` artifact (per-phase JSON stats)
+  - A consolidated GitHub job summary table (Total/Passed/Failed/Flaky/Skipped/Duration).
+- GitHub Actions core steps were upgraded to Node 24-ready actions (`checkout@v5`, `setup-node@v5`, `upload-artifact@v5`).
 
 ---
 
@@ -175,7 +181,7 @@ npx playwright test --project=customerJourney
 | 1.5 | Add "Preview Store" verification in spec | `tests/app_store/marketplaceOnboarding.spec.ts` | ✅ Done | Environment-aware host check from `CUSTOMER_URL` |
 | 1.6 | Verify `setupGuide.spec.ts` locators after rebranding | `pages/admin/setupGuidePage.ts` | ✅ Done | `businessDetailsLink` → `getByRole('tab')`, `brandLink` → `getByRole('tab')`, `saveButton` → `Save Changes` |
 | 1.7 | Verify all admin page locators after rebranding | `pages/admin/*.ts` | ⬜ Pending | Run `adminSeedSetup` + `adminCRUD` and fix failures |
-| 1.8 | Enable `dependencies` in `playwright.config.ts` | `playwright.config.ts` | ⬜ Pending | Uncomment setup dependencies |
+| 1.8 | Finalize no-dependency project model in `playwright.config.ts` | `playwright.config.ts` | ✅ Done | Dependencies intentionally removed; manual phase order is the standard |
 | 1.9 | Create `.env.example` file | `.env.example` | ⬜ Pending | Template for new team members |
 | 1.10 | Clean up `e2eCreateMarketplace.spec.ts` | `tests/e2e/e2eCreateMarketplace.spec.ts` | ⬜ Pending | Old file, either remove or archive |
 
@@ -200,7 +206,7 @@ npx playwright test --project=customerJourney
 | # | Task | File(s) | Status |
 |---|------|---------|--------|
 | 2.6 | Implement `customerPage` fixture (graceful skip + auth file check) | `tests/fixtures/auth.fixtures.ts` | ✅ Done |
-| 2.7 | Add `authenticate customer` with graceful try/catch | `tests/auth.setup.ts` | ✅ Done |
+| 2.7 | Add customer auth flow (moved to dedicated Phase 3 setup file) | `tests/auth.setupUsers.ts` | ✅ Done |
 
 ### 2C — Test Specs
 
@@ -358,5 +364,5 @@ DOKAN_CLOUD_PASSWORD=your_password
 
 ---
 
-**Last Updated:** April 2026  
+**Last Updated:** May 2026  
 **Current Phase:** Phase 2 ✅ Complete — FlyCommerce customer journey (browse / add to cart / checkout) documented in POMs — Phase 3 next (Subscription Plans & Commission)
